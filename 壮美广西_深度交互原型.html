@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>壮美广西 APP · 深度交互原型</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1a1a;--paper:#f5f1eb;--accent:#c4594a;--jade:#5a8a6e;--gold:#c9a84c;--wire:#b8b0a4;--wire-lt:#d9d3ca;--radius:10px;--blue:#5a7ab8}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Noto Sans SC',sans-serif;padding:20px}
+
+.phone{width:393px;height:852px;background:#fff;border-radius:48px;border:2px solid var(--wire-lt);position:relative;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.1),0 0 0 6px var(--paper);display:flex;flex-direction:column}
+.island{width:126px;height:36px;background:#111;border-radius:20px;margin:10px auto 0;flex-shrink:0;z-index:10}
+.status-bar{display:flex;justify-content:space-between;padding:4px 28px 0;font-size:11px;color:var(--wire);font-weight:600;flex-shrink:0}
+.scroll-area{flex:1;overflow-y:auto;padding:10px 18px 0;-webkit-overflow-scrolling:touch;position:relative}
+.scroll-area::-webkit-scrollbar{width:0}
+
+/* === TOAST === */
+.toast-container{position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:200;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:6px}
+.toast{background:rgba(26,26,26,.88);color:#fff;padding:8px 18px;border-radius:20px;font-size:11px;font-weight:500;opacity:0;transform:translateY(-10px);animation:toastIn .3s ease forwards;white-space:nowrap;backdrop-filter:blur(8px)}
+.toast.success{background:rgba(90,138,110,.92)}.toast.warn{background:rgba(201,168,76,.92)}.toast.error{background:rgba(196,89,74,.92)}
+@keyframes toastIn{to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-10px)}}
+
+/* === MODAL OVERLAY === */
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
+.modal-overlay.show{display:flex;animation:fadeOverlay .25s ease}
+@keyframes fadeOverlay{from{opacity:0}to{opacity:1}}
+.modal-sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:70%;padding:16px 18px 24px;transform:translateY(0);animation:slideUp .3s cubic-bezier(.32,.72,.37,1.2)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:var(--wire-lt);margin:0 auto 14px}
+.modal-title{font-family:'Noto Serif SC',serif;font-size:15px;font-weight:700;margin-bottom:12px;text-align:center}
+
+/* === IMAGE VIEWER === */
+.img-viewer{position:absolute;inset:0;background:rgba(0,0,0,.92);z-index:150;display:none;flex-direction:column;align-items:center;justify-content:center}
+.img-viewer.show{display:flex;animation:fadeOverlay .25s ease}
+.img-viewer .iv-close{position:absolute;top:54px;right:20px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
+.img-viewer .iv-content{font-size:120px;animation:zoomIn .3s ease}
+.img-viewer .iv-caption{color:rgba(255,255,255,.7);font-size:11px;margin-top:16px}
+@keyframes zoomIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* === CONFETTI === */
+.confetti-container{position:absolute;inset:0;z-index:180;pointer-events:none;overflow:hidden}
+.confetti{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall 2s ease-out forwards}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(0) rotate(0deg)}100%{opacity:0;transform:translateY(600px) rotate(720deg)}}
+
+/* === NOTIFICATION DOT === */
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);position:absolute;top:-2px;right:-2px;border:2px solid #fff;animation:pulse 2s infinite}
+
+/* === PAGES === */
+.page{display:none;position:relative}
+.page.active{display:block;animation:pageIn .35s cubic-bezier(.32,.72,.37,1)}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.page.slide-left.active{animation:slideLeft .3s ease}
+@keyframes slideLeft{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+
+/* === SKELETON === */
+.skeleton{background:linear-gradient(90deg,var(--paper) 25%,#ece7df 50%,var(--paper) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* === SHARED === */
+.sub-header{display:flex;align-items:center;gap:10px;padding:2px 0 12px;margin-bottom:10px;border-bottom:1.5px dashed var(--wire-lt)}
+.sub-header .sh-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.sh-icon{width:28px;height:28px;border-radius:50%;border:1.5px dashed var(--wire-lt);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;background:#fff;transition:.2s;position:relative}
+.sh-icon:active{transform:scale(.9);background:var(--paper)}
+.back-btn{width:30px;height:30px;border-radius:50%;border:1.5px dashed var(--wire-lt);background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;flex-shrink:0;color:var(--wire);transition:.2s}
+.back-btn:hover{background:var(--paper);color:var(--accent)}
+.sub-header h2{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:700}
+.search{display:flex;align-items:center;gap:8px;background:var(--paper);border-radius:20px;padding:9px 14px;margin-bottom:14px;border:1.5px dashed var(--wire-lt);cursor:pointer;transition:.2s}
+.search:active{border-color:var(--accent)}
+.search-dot{width:16px;height:16px;border:2px solid var(--wire);border-radius:50%;position:relative;flex-shrink:0}
+.search-dot::after{content:'';position:absolute;width:5px;height:2px;background:var(--wire);bottom:-2px;right:-3px;transform:rotate(45deg)}
+.search span{font-size:12px;color:var(--wire)}
+.sec-title{font-family:'Noto Serif SC',serif;font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sec-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px}
+.page-title{font-family:'Noto Serif SC',serif;font-size:18px;font-weight:700;margin-bottom:14px;text-align:center}
+.tag{display:inline-block;font-size:9px;padding:1px 7px;border-radius:8px;background:var(--paper);color:var(--jade);font-weight:500;margin-top:3px;width:fit-content}
+.tag.red{color:var(--accent)}.tag.gold{color:var(--gold)}.tag.blue{color:var(--blue)}
+.chips{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto}.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:6px 13px;border-radius:16px;font-size:11px;font-weight:500;border:1.5px dashed var(--wire-lt);background:#fff;white-space:nowrap;cursor:pointer;transition:.2s}
+.chip:active{transform:scale(.95)}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent);border-style:solid}
+.item{display:flex;gap:10px;background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:10px;cursor:pointer;transition:.15s}
+.item:active{transform:scale(.98);background:var(--paper)}
+.thumb{width:60px;height:60px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px}
+.info{display:flex;flex-direction:column;justify-content:center;flex:1}
+.info h5{font-size:12px;font-weight:700;margin-bottom:3px}
+.info p{font-size:10px;color:var(--wire);line-height:1.35}
+.btn{display:flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:.15s;font-family:inherit}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-outline{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+.btn-jade{background:var(--jade);color:#fff}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-full{width:100%}
+.btn-sm{padding:6px 14px;font-size:11px;border-radius:14px}
+.btn-disabled{opacity:.5;pointer-events:none}
+.btn-loading::after{content:'';width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-left:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HEART ANIM */
+.heart-burst{position:relative}
+.heart-burst .hb{position:absolute;font-size:14px;opacity:0;pointer-events:none;animation:heartFloat 1s ease-out forwards}
+@keyframes heartFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(1.5)}}
+
+/* BANNER */
+.banner-wrap{position:relative;margin-bottom:18px;overflow:hidden;border-radius:var(--radius)}
+.banner-track{display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1);will-change:transform}
+.banner-slide{flex-shrink:0;width:100%;height:120px;border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;cursor:pointer}
+.banner-slide h3{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.2)}
+.banner-slide p{font-size:10px;color:rgba(255,255,255,.85);margin-top:2px}
+.banner-dots{display:flex;gap:4px;justify-content:center;margin-top:8px}
+.banner-dots i{width:5px;height:5px;border-radius:50%;background:var(--wire-lt);display:block;font-style:normal;cursor:pointer;transition:.2s}
+.banner-dots i.on{width:14px;border-radius:3px;background:var(--accent)}
+
+/* GRID / CARD */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.card{background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:14px 10px;text-align:center;cursor:pointer;transition:.2s}
+.card:active{transform:scale(.96);background:var(--paper)}
+.card .ico{width:38px;height:38px;border-radius:12px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:19px}
+.card:nth-child(1) .ico{background:linear-gradient(135deg,#e8f5ee,#d0e8d7)}
+.card:nth-child(2) .ico{background:linear-gradient(135deg,#fce8e6,#f5d0cc)}
+.card:nth-child(3) .ico{background:linear-gradient(135deg,#e6ecf5,#ccd8ed)}
+.card:nth-child(4) .ico{background:linear-gradient(135deg,#fdf3e0,#f5e4c0)}
+.card h4{font-size:12px;font-weight:700;margin-bottom:2px}
+.card p{font-size:9px;color:var(--wire);line-height:1.4}
+
+/* COMMUNITY */
+.comm-tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1.5px solid var(--wire-lt)}
+.comm-tab{flex:1;text-align:center;padding:8px 0;font-size:12px;font-weight:500;color:var(--wire);position:relative;cursor:pointer;transition:.2s}
+.comm-tab.on{color:var(--accent);font-weight:700}
+.comm-tab.on::after{content:'';position:absolute;bottom:-1.5px;left:30%;right:30%;height:2px;background:var(--accent);border-radius:1px;transition:.2s}
+.post{background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.post:active{background:var(--paper)}
+.post-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#e8f5ee,#d0e8d7);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.avatar.v2{background:linear-gradient(135deg,#fce8e6,#f5d0cc)}
+.avatar.v3{background:linear-gradient(135deg,#e6ecf5,#ccd8ed)}
+.avatar.v4{background:linear-gradient(135deg,#fdf3e0,#f5e4c0)}
+.post-head .name{font-size:11px;font-weight:700}
+.post-head .time{font-size:9px;color:var(--wire);margin-left:auto}
+.post-body{font-size:11px;line-height:1.6;color:#444;margin-bottom:8px}
+.post-img{width:100%;height:100px;border-radius:8px;border:1.5px dashed var(--wire-lt);margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--paper);cursor:pointer;transition:.15s}
+.post-img:active{opacity:.8}
+.post-actions{display:flex;gap:16px;font-size:10px;color:var(--wire)}
+.post-actions span{display:flex;align-items:center;gap:3px;cursor:pointer;transition:.15s;user-select:none}
+.post-actions span:active{transform:scale(1.15)}
+.post-actions span.liked{color:var(--accent);font-weight:700}
+.live-card{background:linear-gradient(135deg,#fce8e6,#f5d0cc);border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.live-card .live-info{flex:1}
+.live-card .live-info h5{font-size:12px;font-weight:700}
+.live-card .live-info p{font-size:10px;color:rgba(0,0,0,.5);margin-top:2px}
+.qa-banner{background:linear-gradient(135deg,#fdf3e0,#f5e4c0);border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.qa-banner .qa-ico{font-size:28px}
+
+/* PROFILE */
+.profile-header{text-align:center;padding:10px 0 16px;border-bottom:1.5px dashed var(--wire-lt);margin-bottom:14px}
+.profile-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#a3c4ab,#e6d5a0);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:28px;border:2px dashed var(--wire-lt);cursor:pointer;transition:.2s}
+.profile-avatar:active{transform:scale(.95)}
+.profile-name{font-family:'Noto Serif SC',serif;font-size:15px;font-weight:700;margin-bottom:2px}
+.profile-bio{font-size:10px;color:var(--wire)}
+.stats-row{display:flex;justify-content:space-around;margin:12px 0 0;padding-top:12px;border-top:1px solid var(--wire-lt)}
+.stat{text-align:center;cursor:pointer;transition:.15s}
+.stat:active{transform:scale(.95)}
+.stat .num{font-size:16px;font-weight:700;color:var(--accent)}
+.stat .label{font-size:9px;color:var(--wire);margin-top:2px}
+.menu-item{display:flex;align-items:center;gap:10px;padding:11px 12px;background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;transition:.15s}
+.menu-item:active{background:var(--paper);transform:scale(.98)}
+.menu-item .m-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.menu-item .m-text{font-size:12px;font-weight:500;flex:1}
+.menu-item .m-arrow{font-size:12px;color:var(--wire)}
+.mi-green .m-ico{background:linear-gradient(135deg,#e8f5ee,#d0e8d7)}
+.mi-red .m-ico{background:linear-gradient(135deg,#fce8e6,#f5d0cc)}
+.mi-blue .m-ico{background:linear-gradient(135deg,#e6ecf5,#ccd8ed)}
+.mi-gold .m-ico{background:linear-gradient(135deg,#fdf3e0,#f5e4c0)}
+.badge-row{display:flex;gap:8px;padding:8px 0 4px}
+.badge{width:36px;height:36px;border-radius:50%;border:1.5px dashed var(--wire-lt);display:flex;align-items:center;justify-content:center;font-size:16px;background:#fff;cursor:pointer;transition:.2s}
+.badge:active{transform:scale(1.15)}
+
+/* SETTINGS */
+.setting-group{margin-bottom:14px}
+.setting-group-title{font-size:10px;color:var(--wire);font-weight:500;margin-bottom:6px;padding-left:4px;text-transform:uppercase;letter-spacing:1px}
+.setting-item{display:flex;align-items:center;gap:10px;padding:11px 12px;background:#fff;border:1.5px dashed var(--wire-lt);margin-bottom:-1.5px;cursor:pointer;transition:.15s}
+.setting-item:active{background:var(--paper)}
+.setting-item:first-of-type{border-radius:var(--radius) var(--radius) 0 0}
+.setting-item:last-of-type{border-radius:0 0 var(--radius) var(--radius);margin-bottom:0}
+.setting-item .s-ico{font-size:16px;flex-shrink:0;width:22px;text-align:center}
+.setting-item .s-text{font-size:12px;flex:1}
+.setting-item .s-val{font-size:10px;color:var(--wire)}
+.setting-item .s-arrow{font-size:12px;color:var(--wire)}
+.toggle{width:36px;height:20px;border-radius:10px;background:var(--wire-lt);position:relative;flex-shrink:0;cursor:pointer;transition:.25s}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:.25s}
+.toggle.on{background:var(--jade)}
+.toggle.on::after{left:18px}
+.setting-footer{text-align:center;padding:16px 0;font-size:10px;color:var(--wire);line-height:1.8}
+
+/* MAP */
+.map-container{width:100%;height:200px;border-radius:var(--radius);border:1.5px dashed var(--wire-lt);background:linear-gradient(135deg,#dce8d8 0%,#e8e0c8 40%,#d4dce8 100%);position:relative;margin-bottom:14px;overflow:hidden}
+.map-pin{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:.2s}
+.map-pin:hover{transform:scale(1.2);z-index:2}
+.map-pin .pin-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.map-pin .pin-label{font-size:7px;font-weight:700;color:var(--ink);margin-top:2px;white-space:nowrap}
+.map-label{position:absolute;font-size:8px;font-weight:700;color:#fff;background:var(--accent);padding:2px 6px;border-radius:8px;white-space:nowrap}
+.filter-row{display:flex;gap:6px;margin-bottom:14px}
+.filter-btn{flex:1;padding:8px 0;text-align:center;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);font-size:10px;font-weight:500;background:#fff;cursor:pointer;transition:.2s}
+.filter-btn:active{transform:scale(.96)}
+.filter-btn.on{border-color:var(--jade);border-style:solid;color:var(--jade);background:#f0f7f2}
+.route-card{background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.route-card:active{background:var(--paper);transform:scale(.98)}
+.route-card h5{font-size:12px;font-weight:700;margin-bottom:4px}
+.route-card p{font-size:10px;color:var(--wire);line-height:1.4}
+.route-stops{display:flex;gap:4px;margin-top:8px;align-items:center}
+.route-stop{width:24px;height:24px;border-radius:50%;background:var(--paper);border:1.5px dashed var(--wire-lt);display:flex;align-items:center;justify-content:center;font-size:10px}
+.route-line{flex:1;height:1.5px;background:var(--wire-lt)}
+
+/* HERITAGE */
+.heritage-stats{display:flex;gap:8px;margin-bottom:14px}
+.h-stat{flex:1;background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:10px;text-align:center;cursor:pointer;transition:.15s}
+.h-stat:active{transform:scale(.96)}
+.h-stat .h-num{font-size:18px;font-weight:700;color:var(--accent)}
+.h-stat .h-label{font-size:9px;color:var(--wire);margin-top:2px}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.cat-item{background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:10px 6px;text-align:center;cursor:pointer;transition:.2s}
+.cat-item:active{transform:scale(.94);background:var(--paper)}
+.cat-item .c-ico{font-size:22px;margin-bottom:4px}
+.cat-item .c-name{font-size:10px;font-weight:600}
+.cat-item .c-count{font-size:8px;color:var(--wire);margin-top:1px}
+.heritage-item{display:flex;gap:10px;background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:10px;margin-bottom:8px;cursor:pointer;transition:.15s}
+.heritage-item:active{background:var(--paper);transform:scale(.98)}
+.h-thumb{width:54px;height:54px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px}
+.h-info{flex:1;display:flex;flex-direction:column;justify-content:center}
+.h-info h5{font-size:12px;font-weight:700;margin-bottom:2px}
+.h-info p{font-size:10px;color:var(--wire);line-height:1.3}
+.h-tags{display:flex;gap:4px;margin-top:3px}
+
+/* LANGUAGE */
+.lang-hero{background:linear-gradient(135deg,#ccd8ed 0%,#e6ecf5 50%,#d0e8d7 100%);border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:16px;margin-bottom:14px;text-align:center;position:relative;overflow:hidden}
+.lang-hero::after{content:'🎤';position:absolute;top:10px;right:14px;font-size:28px;opacity:.3}
+.course-card{background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.course-card:active{background:var(--paper)}
+.course-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.course-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.progress-bar{height:5px;background:var(--paper);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.song-item{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:10px;margin-bottom:8px;cursor:pointer;transition:.15s}
+.song-item:active{background:var(--paper)}
+.song-play{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#fce8e6,#f5d0cc);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:.2s}
+.song-play.playing{background:var(--accent);color:#fff}
+.challenge-card{background:linear-gradient(135deg,#fdf3e0,#f5e4c0);border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:.15s}
+.challenge-card:active{transform:scale(.98)}
+
+/* IMMERSIVE */
+.imm-hero{height:140px;border-radius:var(--radius);background:linear-gradient(135deg,#2a2a3a 0%,#3d2a4a 50%,#4a3a2a 100%);margin-bottom:14px;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden}
+.imm-badge{position:absolute;top:12px;left:14px;background:rgba(255,255,255,.15);backdrop-filter:blur(4px);padding:3px 10px;border-radius:12px;font-size:9px;color:#fff;font-weight:600}
+.vr-card{background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;cursor:pointer;transition:.15s}
+.vr-card:active{transform:scale(.98)}
+.vr-preview{height:80px;display:flex;align-items:center;justify-content:center;font-size:32px;position:relative}
+.vr-preview .vr-360{position:absolute;top:6px;right:8px;background:rgba(0,0,0,.5);color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:8px}
+.game-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.game-card{background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;transition:.15s}
+.game-card:active{background:var(--paper);transform:scale(.96)}
+.game-card .g-ico{font-size:28px;margin-bottom:6px}
+.exhibit-card{display:flex;gap:10px;background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:10px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.exhibit-card:active{background:var(--paper)}
+.exhibit-thumb{width:70px;height:70px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px}
+
+/* DETAIL */
+.detail-hero{width:100%;height:180px;border-radius:var(--radius);margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;overflow:hidden;border:1.5px dashed var(--wire-lt)}
+.detail-hero .hero-badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.5);color:#fff;font-size:9px;font-weight:600;padding:3px 10px;border-radius:10px}
+.detail-title{font-family:'Noto Serif SC',serif;font-size:17px;font-weight:700;margin-bottom:6px}
+.detail-desc{font-size:11px;color:#555;line-height:1.7;margin-bottom:14px}
+.detail-meta{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.info-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--wire-lt);font-size:12px}
+.info-row .ir-label{color:var(--wire);width:70px;flex-shrink:0;font-size:11px}
+.info-row .ir-val{font-weight:500;flex:1;font-size:11px}
+.gallery{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px}
+.gallery-item{aspect-ratio:1;border-radius:8px;border:1.5px dashed var(--wire-lt);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;transition:.15s}
+.gallery-item:active{opacity:.7;transform:scale(.96)}
+
+/* PLAYER */
+.player-box{background:var(--paper);border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:14px}
+.player-disc{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#2a2a3a,#4a3a2a);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px;border:3px solid var(--wire-lt)}
+.player-disc.spinning{animation:spin 4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.player-controls{display:flex;align-items:center;justify-content:center;gap:20px}
+.p-ctrl{width:36px;height:36px;border-radius:50%;border:1.5px dashed var(--wire-lt);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;background:#fff;transition:.15s}
+.p-ctrl:active{transform:scale(.9)}
+.p-ctrl.big{width:48px;height:48px;background:var(--accent);color:#fff;font-size:18px;border:none}
+
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:600;margin-bottom:6px;display:block}
+.form-input{width:100%;padding:10px 12px;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);font-size:12px;background:#fff;font-family:inherit;outline:none;transition:.2s}
+.form-input:focus{border-color:var(--accent);border-style:solid;box-shadow:0 0 0 3px rgba(196,89,74,.08)}
+.form-textarea{min-height:80px;resize:vertical}
+
+/* QUIZ */
+.quiz-q{font-family:'Noto Serif SC',serif;font-size:14px;font-weight:700;margin-bottom:12px;line-height:1.5}
+.quiz-option{display:flex;align-items:center;gap:10px;padding:12px;background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:.2s;font-size:12px}
+.quiz-option:active{transform:scale(.98)}
+.quiz-option.selected{border-color:var(--jade);border-style:solid;background:#f0f7f2}
+.quiz-option.correct{border-color:var(--jade);border-style:solid;background:#e8f5ee;animation:popCorrect .4s ease}
+.quiz-option.wrong{border-color:var(--accent);border-style:solid;background:#fdf0ee;animation:shake .4s ease}
+@keyframes popCorrect{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.quiz-option .qo-letter{width:24px;height:24px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;transition:.2s}
+.quiz-option.correct .qo-letter{background:var(--jade);color:#fff}
+.quiz-option.wrong .qo-letter{background:var(--accent);color:#fff}
+
+/* LIVE */
+.live-screen{width:100%;height:200px;border-radius:var(--radius);background:linear-gradient(135deg,#2a2a3a,#3d2a4a);display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:14px;overflow:hidden}
+.live-screen .ls-badge{position:absolute;top:10px;left:10px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:8px;display:flex;align-items:center;gap:4px}
+.live-screen .ls-count{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);color:#fff;font-size:9px;padding:3px 8px;border-radius:8px}
+.chat-bubble{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;animation:chatIn .3s ease}
+@keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.chat-bubble .cb-name{font-size:10px;font-weight:700;color:var(--accent)}
+.chat-bubble .cb-msg{font-size:10px;color:#555;line-height:1.4}
+.chat-input-row{display:flex;gap:8px;margin-top:12px;margin-bottom:16px}
+.chat-input{flex:1;padding:8px 14px;border:1.5px dashed var(--wire-lt);border-radius:20px;font-size:11px;background:var(--paper);outline:none;font-family:inherit;transition:.2s}
+.chat-input:focus{border-color:var(--accent);border-style:solid}
+.chat-send{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:.15s;font-family:inherit}
+.chat-send:active{transform:scale(.9)}
+
+/* CALENDAR */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-header h4{font-size:13px;font-weight:700}
+.cal-nav span{width:24px;height:24px;border-radius:50%;border:1.5px dashed var(--wire-lt);display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:14px;text-align:center}
+.cal-day{font-size:9px;color:var(--wire);padding:4px 0;font-weight:600}
+.cal-date{font-size:11px;padding:6px 0;border-radius:8px;cursor:pointer;position:relative;transition:.15s}
+.cal-date:active{background:var(--paper)}
+.cal-date.today{background:var(--accent);color:#fff;font-weight:700;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;margin:0 auto}
+.cal-date.has-event::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);position:absolute;bottom:2px;left:50%;transform:translateX(-50%)}
+.cal-date.muted{color:var(--wire-lt)}
+
+/* CHECKIN */
+.checkin-map{width:100%;height:160px;border-radius:var(--radius);background:linear-gradient(135deg,#dce8d8,#e8e0c8,#d4dce8);border:1.5px dashed var(--wire-lt);margin-bottom:14px;position:relative;overflow:hidden}
+.ck-dot{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--jade);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.2s;cursor:pointer}
+.ck-dot:hover{transform:scale(1.3)}
+.ck-dot.visited{background:var(--accent)}
+
+/* LESSON */
+.lesson-card{background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:.15s}
+.lesson-card:active{background:var(--paper);transform:scale(.98)}
+.lesson-num{width:28px;height:28px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:var(--accent)}
+.lesson-num.done{background:var(--jade);color:#fff}
+.lesson-num.locked{background:var(--wire-lt);color:var(--wire)}
+.lesson-info{flex:1}.lesson-info h5{font-size:12px;font-weight:600;margin-bottom:2px}.lesson-info p{font-size:9px;color:var(--wire)}
+
+/* WAVEFORM */
+.waveform{display:flex;align-items:center;justify-content:center;gap:2px;height:40px;margin:12px 0}
+.waveform .bar{width:3px;border-radius:2px;background:var(--jade)}
+.waveform.animating .bar{animation:wave 1.2s ease-in-out infinite}
+.waveform .bar:nth-child(1){height:15px;animation-delay:0s}.waveform .bar:nth-child(2){height:25px;animation-delay:.1s}.waveform .bar:nth-child(3){height:35px;animation-delay:.2s}.waveform .bar:nth-child(4){height:20px;animation-delay:.3s}.waveform .bar:nth-child(5){height:30px;animation-delay:.4s}.waveform .bar:nth-child(6){height:18px;animation-delay:.5s}.waveform .bar:nth-child(7){height:28px;animation-delay:.6s}.waveform .bar:nth-child(8){height:22px;animation-delay:.7s}.waveform .bar:nth-child(9){height:32px;animation-delay:.8s}.waveform .bar:nth-child(10){height:16px;animation-delay:.9s}
+@keyframes wave{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
+
+/* SCORE */
+.score-circle{width:80px;height:80px;border-radius:50%;border:4px solid var(--jade);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;position:relative}
+.score-circle .sc-num{font-size:24px;font-weight:900;color:var(--jade)}
+.score-circle.animate{animation:scoreReveal .6s cubic-bezier(.32,.72,.37,1.2)}
+@keyframes scoreReveal{from{transform:scale(0) rotate(-180deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+
+/* FLOATING BTN */
+.fab{position:absolute;bottom:86px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 12px rgba(196,89,74,.4);cursor:pointer;z-index:5;transition:.25s}
+.fab:active{transform:scale(.9)}
+.fab-menu{position:absolute;bottom:140px;right:18px;z-index:5;display:none;flex-direction:column;gap:8px;align-items:flex-end}
+.fab-menu.show{display:flex;animation:fadeIn .2s ease}
+.fab-option{display:flex;align-items:center;gap:8px;cursor:pointer;animation:fabSlide .3s ease backwards}
+.fab-option:nth-child(1){animation-delay:0s}.fab-option:nth-child(2){animation-delay:.05s}.fab-option:nth-child(3){animation-delay:.1s}
+@keyframes fabSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fab-option span{background:#fff;padding:5px 12px;border-radius:12px;font-size:10px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.1);white-space:nowrap}
+.fab-option .fab-ico{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+
+/* TABS BAR */
+.tabs{height:74px;background:#fff;border-top:1px solid var(--wire-lt);display:flex;align-items:center;justify-content:space-around;padding:0 6px 18px;flex-shrink:0;border-radius:0 0 46px 46px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.15s;position:relative}
+.tab:active{transform:scale(.92)}
+.tab .ti{font-size:18px;color:var(--wire);transition:.2s}
+.tab .tl{font-size:9px;color:var(--wire);font-weight:500;transition:.2s}
+.tab.on .ti,.tab.on .tl{color:var(--accent)}
+.tab.on .tl{font-weight:700}
+
+/* COUNTDOWN */
+.countdown{display:flex;gap:6px;justify-content:center;margin:10px 0}
+.cd-unit{text-align:center}
+.cd-unit .cd-num{width:36px;height:36px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900}
+.cd-unit .cd-label{font-size:8px;color:var(--wire);margin-top:3px}
+
+/* LOADING OVERLAY */
+.page-loading{position:absolute;inset:0;background:#fff;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.page-loading .pl-spinner{width:32px;height:32px;border:3px solid var(--wire-lt);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.page-loading .pl-text{font-size:11px;color:var(--wire)}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="island"></div>
+  <div class="status-bar"><span id="clock">9:41</span><span style="letter-spacing:2px;">● ● ●</span></div>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- IMAGE VIEWER -->
+  <div class="img-viewer" id="imgViewer">
+    <div class="iv-close" onclick="closeImageViewer()">✕</div>
+    <div class="iv-content" id="ivContent">🎭</div>
+    <div class="iv-caption" id="ivCaption">壮族歌圩盛会</div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-sheet" id="modalSheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- CONFETTI -->
+  <div class="confetti-container" id="confettiContainer"></div>
+
+  <div class="scroll-area" id="scrollArea">
+
+    <!-- ===== SPLASH ===== -->
+    <div class="page" id="page-splash">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px 0;">
+        <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#a3c4ab,#e6d5a0,#e8a89f);display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:16px;animation:splashPulse 2s ease infinite;">🎭</div>
+        <div style="font-family:'Noto Serif SC',serif;font-size:22px;font-weight:900;margin-bottom:4px;">壮美广西</div>
+        <div style="font-size:11px;color:var(--wire);margin-bottom:30px;">传承千年文化 · 共享民族瑰宝</div>
+        <div class="btn btn-primary" onclick="switchTab('home')" style="padding:12px 40px;font-size:13px;">进入应用</div>
+      </div>
+    </div>
+    <style>@keyframes splashPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}</style>
+
+    <!-- ===== P1: 首页 ===== -->
+    <div class="page" id="page-home">
+      <div class="search" onclick="goSub('search')"><div class="search-dot"></div><span>搜索非遗项目、民族文化…</span></div>
+      <!-- SWIPEABLE BANNER -->
+      <div class="banner-wrap">
+        <div class="banner-track" id="bannerTrack">
+          <div class="banner-slide" style="background:linear-gradient(135deg,#a3c4ab,#e6d5a0,#e8a89f);" onclick="goSub('vr-detail')"><h3>三月三 · 歌圩盛会</h3><p>沉浸式体验壮族传统节日</p></div>
+          <div class="banner-slide" style="background:linear-gradient(135deg,#c8a0d4,#e6c8ef,#a08ac8);" onclick="goSub('exhibit-detail')"><h3>花山岩画 · 数字复原</h3><p>世界文化遗产360°全景</p></div>
+          <div class="banner-slide" style="background:linear-gradient(135deg,#5a8a6e,#7ab892,#a3c4ab);" onclick="goSub('heritage-detail')"><h3>侗族大歌 · 天籁之音</h3><p>世界级非遗 · 多声部合唱</p></div>
+        </div>
+      </div>
+      <div class="banner-dots" id="bannerDots"><i class="on" onclick="slideBanner(0)"></i><i onclick="slideBanner(1)"></i><i onclick="slideBanner(2)"></i></div>
+      <div style="height:10px;"></div>
+      <div class="sec-title">核心功能</div>
+      <div class="grid">
+        <div class="card" onclick="goSub('map')"><div class="ico">🗺️</div><h4>文化地图</h4><p>14地市遗产点 · 主题路线</p></div>
+        <div class="card" onclick="goSub('heritage')"><div class="ico">📜</div><h4>非遗百科</h4><p>500+项目 · 传承人档案</p></div>
+        <div class="card" onclick="goSub('language')"><div class="ico">🎵</div><h4>语言学堂</h4><p>壮/侗/瑶语 · AI纠音</p></div>
+        <div class="card" onclick="goSub('immersive')"><div class="ico">🎭</div><h4>沉浸体验</h4><p>AR/VR还原 · 互动游戏</p></div>
+      </div>
+      <div class="chips" id="homeChips">
+        <div class="chip on" data-cat="all">推荐</div><div class="chip" data-cat="music">传统音乐</div><div class="chip" data-cat="craft">传统技艺</div><div class="chip" data-cat="folk">民俗</div><div class="chip" data-cat="dance">传统舞蹈</div>
+      </div>
+      <div class="sec-title">热门内容</div>
+      <div id="hotContent">
+        <div class="item" data-cat="all,craft" onclick="goSub('exhibit-detail')"><div class="thumb" style="background:linear-gradient(135deg,#e8f5ee,#c8e6cf);">🏔️</div><div class="info"><h5>花山岩画数字复原</h5><p>360°沉浸式观赏左江花山岩画</p><span class="tag">虚拟展馆</span></div></div>
+        <div class="item" data-cat="all,music" onclick="goSub('song-player')"><div class="thumb" style="background:linear-gradient(135deg,#fce8e6,#f0c8c4);">🎶</div><div class="info"><h5>壮族山歌学唱挑战</h5><p>逐句跟唱经典山歌，AI评分</p><span class="tag">互动体验</span></div></div>
+        <div class="item" data-cat="all,craft" onclick="goSub('game-detail')"><div class="thumb" style="background:linear-gradient(135deg,#fdf3e0,#f0deb0);">🧵</div><div class="info"><h5>壮锦织造体验</h5><p>模拟传统壮锦编织工艺</p><span class="tag">互动游戏</span></div></div>
+        <div class="item" data-cat="all,folk" onclick="goSub('heritage-detail')"><div class="thumb" style="background:linear-gradient(135deg,#e6ecf5,#ccd8ed);">🥁</div><div class="info"><h5>铜鼓文化探秘</h5><p>壮族铜鼓习俗深度解读</p><span class="tag">民俗</span></div></div>
+        <div class="item" data-cat="all,dance" onclick="goSub('heritage-detail')"><div class="thumb" style="background:linear-gradient(135deg,#fce8e6,#f5d0cc);">💃</div><div class="info"><h5>瑶族长鼓舞</h5><p>千年舞蹈传承</p><span class="tag">传统舞蹈</span></div></div>
+        <div class="item" data-cat="all,music" onclick="goSub('song-player')"><div class="thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🎸</div><div class="info"><h5>天琴弹唱艺术</h5><p>龙州壮族天琴演奏</p><span class="tag">传统音乐</span></div></div>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+
+    <!-- ===== P2: 文化地图 ===== -->
+    <div class="page" id="page-map">
+      <div class="sub-header"><div class="back-btn" onclick="goBack()">‹</div><h2>🗺️ 文化地图</h2><div class="sh-right"><div class="sh-icon" onclick="showToast('已刷新地图数据','success')">🔄</div></div></div>
+      <div class="map-container">
+        <div class="map-pin" style="top:25%;left:22%" onclick="showCityCard('百色','5处遗产点','🏔️')"><div class="pin-dot"></div><div class="pin-label">百色</div></div>
+        <div class="map-pin" style="top:18%;left:42%" onclick="showCityCard('柳州','8处遗产点','🌉')"><div class="pin-dot"></div><div class="pin-label">柳州</div></div>
+        <div class="map-pin" style="top:35%;left:30%" onclick="showCityCard('崇左','6处遗产点','🏔️')"><div class="pin-dot"></div><div class="pin-label">崇左</div></div>
+        <div class="map-pin" style="top:50%;left:45%" onclick="showCityCard('南宁','12处遗产点','🏙️')"><div class="pin-dot"></div><div class="pin-label">南宁</div></div>
+        <div class="map-pin" style="top:15%;left:62%" onclick="showCityCard('桂林','10处遗产点','⛰️')"><div class="pin-dot"></div><div class="pin-label">桂林</div></div>
+        <div class="map-pin" style="top:40%;left:68%" onclick="showCityCard('梧州','4处遗产点','🏮')"><div class="pin-dot"></div><div class="pin-label">梧州</div></div>
+        <div class="map-pin" style="top:60%;left:55%" onclick="showCityCard('钦州','5处遗产点','🐬')"><div class="pin-dot"></div><div class="pin-label">钦州</div></div>
+        <div class="map-pin" style="top:65%;left:40%" onclick="showCityCard('北海','3处遗产点','🌊')"><div class="pin-dot"></div><div class="pin-label">北海</div></div>
+        <div class="map-label" style="bottom:8px;left:50%;transform:translateX(-50%);">📍 点击城市查看详情</div>
+      </div>
+      <div class="sec-title">筛选方式</div>
+      <div class="filter-row" id="mapFilter">
+        <div class="filter-btn on" data-f="area">📍 按区域</div><div class="filter-btn" data-f="eth">👥 按民族</div><div class="filter-btn" data-f="type">🏷️ 按类型</div>
+      </div>
+      <div class="sec-title">主题路线</div>
+      <div class="route-card" onclick="goSub('route-detail')"><h5>🏔️ 左江花山岩画之旅</h5><p>崇左 → 宁明 → 龙州，探访世界文化遗产</p><div class="route-stops"><div class="route-stop">📍</div><div class="route-line"></div><div class="route-stop">🏔️</div><div class="route-line"></div><div class="route-stop">🖼️</div><div class="route-line"></div><div class="route-stop">🏁</div></div><div style="display:flex;gap:4px;margin-top:6px;"><span class="tag">3站</span><span class="tag">2日游</span><span class="tag gold">热门</span></div></div>
+      <div class="route-card" onclick="goSub('route-detail')"><h5>🌾 侗族风雨桥文化线</h5><p>三江 → 程阳 → 林溪，感受侗寨建筑之美</p><div class="route-stops"><div class="route-stop">📍</div><div class="route-line"></div><div class="route-stop">🌉</div><div class="route-line"></div><div class="route-stop">🏘️</div><div class="route-line"></div><div class="route-stop">🏁</div></div><div style="display:flex;gap:4px;margin-top:6px;"><span class="tag">3站</span><span class="tag">1日游</span></div></div>
+      <div class="route-card" onclick="goSub('route-detail')" style="margin-bottom:16px;"><h5>🎶 壮族山歌发源地探访</h5><p>武鸣 → 马山 → 上林，追寻歌圩文化</p><div class="route-stops"><div class="route-stop">📍</div><div class="route-line"></div><div class="route-stop">🎵</div><div class="route-line"></div><div class="route-stop">🎤</div><div class="route-line"></div><div class="route-stop">🏁</div></div><div style="display:flex;gap:4px;margin-top:6px;"><span class="tag">3站</span><span class="tag">2日游</span><span class="tag red">新上线</span></div></div>
+    </div>
+
+    <!-- ===== P3: 路线详情 ===== -->
+    <div class="page" id="page-route-detail">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('map')">‹</div><h2>🗺️ 路线详情</h2><div class="sh-right"><div class="sh-icon" onclick="toggleFav(this,'route')">🤍</div><div class="sh-icon" onclick="showShareSheet()">📤</div></div></div>
+      <div class="detail-hero" style="background:linear-gradient(135deg,#e8d5a0,#d4a86a);" onclick="openImageViewer('🏔️','左江花山岩画之旅')">🏔️<div class="hero-badge">2日游 · 3个打卡点</div></div>
+      <div class="detail-title">左江花山岩画之旅</div>
+      <div class="detail-desc">从崇左出发，沿左江而上，探访世界文化遗产花山岩画，感受两千年前骆越先民的艺术创造力。</div>
+      <div class="sec-title">路线站点</div>
+      <div class="lesson-card" onclick="goSub('checkin')"><div class="lesson-num done">1</div><div class="lesson-info"><h5>崇左市区集合</h5><p>出发点 · 建议上午8:00出发</p></div></div>
+      <div class="lesson-card" onclick="goSub('checkin')"><div class="lesson-num" style="background:var(--gold);color:#fff;">2</div><div class="lesson-info"><h5>宁明花山岩画</h5><p>世界文化遗产 · 游览约2小时</p></div></div>
+      <div class="lesson-card" onclick="goSub('checkin')"><div class="lesson-num locked">3</div><div class="lesson-info"><h5>龙州天琴艺术中心</h5><p>欣赏壮族天琴弹唱 · 约1.5小时</p></div></div>
+      <div style="display:flex;gap:8px;margin:14px 0 16px;"><div class="btn btn-primary btn-full" onclick="goSub('checkin')">开始打卡</div></div>
+    </div>
+
+    <!-- ===== P4: 打卡页 ===== -->
+    <div class="page" id="page-checkin">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('route-detail')">‹</div><h2>📍 打卡</h2></div>
+      <div class="detail-hero" style="background:linear-gradient(135deg,#e8f5ee,#c8e6cf);" onclick="openImageViewer('📍','宁明花山岩画')">📍</div>
+      <div class="detail-title" style="text-align:center;">宁明花山岩画</div>
+      <p style="text-align:center;font-size:10px;color:var(--wire);margin-bottom:16px;">广西崇左市宁明县 · 世界文化遗产</p>
+      <div style="text-align:center;margin-bottom:16px;"><div class="btn btn-primary" style="display:inline-flex;" id="checkinBtn" onclick="doCheckin()">📍 确认打卡</div></div>
+      <div class="sec-title">拍照记录</div>
+      <div class="gallery"><div class="gallery-item" style="background:var(--paper);">📷</div><div class="gallery-item" style="background:var(--paper);" onclick="showToast('已添加照片','success')">+</div></div>
+      <div class="form-group"><div class="form-label">打卡感想</div><textarea class="form-input form-textarea" placeholder="记录你的文化之旅感受…"></textarea></div>
+      <div class="btn btn-jade btn-full" style="margin-bottom:16px;" onclick="doPublishCheckin()">发布打卡动态</div>
+    </div>
+
+    <!-- ===== P5: 非遗百科 ===== -->
+    <div class="page" id="page-heritage">
+      <div class="sub-header"><div class="back-btn" onclick="goBack()">‹</div><h2>📜 非遗百科</h2></div>
+      <div class="search" onclick="goSub('search')"><div class="search-dot"></div><span>搜索非遗项目、传承人…</span></div>
+      <div class="heritage-stats"><div class="h-stat" onclick="showToast('收录500+项广西非遗项目')"><div class="h-num">500+</div><div class="h-label">收录项目</div></div><div class="h-stat"><div class="h-num">52</div><div class="h-label">国家级</div></div><div class="h-stat"><div class="h-num">268</div><div class="h-label">传承人</div></div></div>
+      <div class="sec-title">分类浏览</div>
+      <div class="cat-grid">
+        <div class="cat-item" onclick="goSub('cat-list')"><div class="c-ico">🎵</div><div class="c-name">传统音乐</div><div class="c-count">86项</div></div>
+        <div class="cat-item" onclick="goSub('cat-list')"><div class="c-ico">💃</div><div class="c-name">传统舞蹈</div><div class="c-count">54项</div></div>
+        <div class="cat-item" onclick="goSub('cat-list')"><div class="c-ico">🧵</div><div class="c-name">传统技艺</div><div class="c-count">128项</div></div>
+        <div class="cat-item" onclick="goSub('cat-list')"><div class="c-ico">🌿</div><div class="c-name">传统医药</div><div class="c-count">36项</div></div>
+        <div class="cat-item" onclick="goSub('cat-list')"><div class="c-ico">🎭</div><div class="c-name">曲艺戏剧</div><div class="c-count">45项</div></div>
+        <div class="cat-item" onclick="goSub('cat-list')"><div class="c-ico">🏮</div><div class="c-name">民俗</div><div class="c-count">92项</div></div>
+      </div>
+      <div class="sec-title">热门项目</div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🎶</div><div class="h-info"><h5>壮族三声部民歌</h5><p>国家级非遗 · 多声部合唱艺术</p><div class="h-tags"><span class="tag">国家级</span><span class="tag">传统音乐</span></div></div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#fce8e6,#f5d0cc);">🧶</div><div class="h-info"><h5>壮锦织造技艺</h5><p>国家级非遗 · 千年织锦工艺</p><div class="h-tags"><span class="tag">国家级</span><span class="tag">传统技艺</span></div></div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🥁</div><div class="h-info"><h5>铜鼓习俗</h5><p>国家级非遗 · 壮族铜鼓文化</p><div class="h-tags"><span class="tag">国家级</span><span class="tag">民俗</span></div></div></div>
+      <div class="sec-title" style="margin-top:4px;">传承人档案</div>
+      <div class="heritage-item" onclick="goSub('inheritor-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#fdf3e0,#f5e4c0);">👩‍🦳</div><div class="h-info"><h5>谭湘光 · 壮锦传承人</h5><p>国家级代表性传承人</p><div class="h-tags"><span class="tag gold">国家级传承人</span></div></div></div>
+      <div class="heritage-item" onclick="goSub('inheritor-detail')" style="margin-bottom:16px;"><div class="h-thumb" style="background:linear-gradient(135deg,#e6ecf5,#ccd8ed);">👨‍🦳</div><div class="h-info"><h5>韦万义 · 铜鼓铸造传承人</h5><p>区级代表性传承人</p><div class="h-tags"><span class="tag">区级传承人</span></div></div></div>
+    </div>
+
+    <!-- ===== P6: 分类列表 ===== -->
+    <div class="page" id="page-cat-list">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('heritage')">‹</div><h2>🎵 传统音乐</h2></div>
+      <div class="search" onclick="goSub('search')"><div class="search-dot"></div><span>搜索传统音乐项目…</span></div>
+      <div class="chips"><div class="chip on">全部</div><div class="chip">国家级</div><div class="chip">区级</div><div class="chip">市级</div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🎶</div><div class="h-info"><h5>壮族三声部民歌</h5><p>马山县 · 多声部民间合唱</p><div class="h-tags"><span class="tag">国家级</span></div></div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#fce8e6,#f5d0cc);">🎸</div><div class="h-info"><h5>壮族天琴艺术</h5><p>龙州县 · 弹拨乐器演奏</p><div class="h-tags"><span class="tag">国家级</span></div></div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🎵</div><div class="h-info"><h5>侗族大歌</h5><p>三江县 · 世界级非遗</p><div class="h-tags"><span class="tag red">世界级</span></div></div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#fce8e6,#f5d0cc);">🎤</div><div class="h-info"><h5>刘三姐歌谣</h5><p>宜州区 · 民间歌谣传统</p><div class="h-tags"><span class="tag">国家级</span></div></div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')" style="margin-bottom:16px;"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🪈</div><div class="h-info"><h5>苗族芦笙音乐</h5><p>融水县 · 芦笙演奏技艺</p><div class="h-tags"><span class="tag">国家级</span></div></div></div>
+    </div>
+
+    <!-- ===== P7: 非遗详情 ===== -->
+    <div class="page" id="page-heritage-detail">
+      <div class="sub-header"><div class="back-btn" onclick="navBack()">‹</div><h2>📜 项目详情</h2><div class="sh-right"><div class="sh-icon" onclick="toggleFav(this,'heritage')">🤍</div><div class="sh-icon" onclick="showShareSheet()">📤</div></div></div>
+      <div class="detail-hero" style="background:linear-gradient(135deg,#e8f5ee,#c8e6cf);" onclick="openImageViewer('🎶','壮族三声部民歌')">🎶<div class="hero-badge">国家级非物质文化遗产</div></div>
+      <div class="detail-title">壮族三声部民歌</div>
+      <div class="detail-meta"><span class="tag">国家级</span><span class="tag">传统音乐</span><span class="tag">马山县</span></div>
+      <div class="detail-desc">壮族三声部民歌是广西马山县壮族民间多声部合唱形式，以独特的三声部和声结构闻名于世。它融合了壮族人民的生活智慧与音乐天赋，被誉为"天籁之音"。</div>
+      <div class="sec-title">高清图集</div>
+      <div class="gallery">
+        <div class="gallery-item" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);" onclick="openImageViewer('🎤','歌圩现场')">🎤</div>
+        <div class="gallery-item" style="background:linear-gradient(135deg,#fce8e6,#f5d0cc);" onclick="openImageViewer('🎵','多声部合唱')">🎵</div>
+        <div class="gallery-item" style="background:linear-gradient(135deg,#fdf3e0,#f5e4c0);" onclick="openImageViewer('🏔️','马山风光')">🏔️</div>
+      </div>
+      <div class="sec-title">基本信息</div>
+      <div class="info-row"><span class="ir-label">遗产级别</span><span class="ir-val">国家级（第二批）</span></div>
+      <div class="info-row"><span class="ir-label">所在地区</span><span class="ir-val">南宁市马山县</span></div>
+      <div class="info-row"><span class="ir-label">所属民族</span><span class="ir-val">壮族</span></div>
+      <div class="info-row" style="border-bottom:none;"><span class="ir-label">代表传承人</span><span class="ir-val" style="color:var(--accent);cursor:pointer;" onclick="goSub('inheritor-detail')">温桂元、韦爱群 ›</span></div>
+      <div class="sec-title" style="margin-top:14px;">相关视频</div>
+      <div class="item" onclick="goSub('video-player')" style="margin-bottom:8px;"><div class="thumb" style="background:linear-gradient(135deg,#2a2a3a,#3d2a4a);color:#fff;">▶️</div><div class="info"><h5>纪录片：天籁之音</h5><p>25分钟 · 壮族三声部民歌纪实</p><span class="tag red">精选</span></div></div>
+      <div class="sec-title">相关音频</div>
+      <div class="song-item" onclick="goSub('song-player')"><div class="song-play">▶</div><div style="flex:1;"><h5 style="font-size:11px;font-weight:700;margin-bottom:1px;">三声部民歌选段</h5><p style="font-size:9px;color:var(--wire);">原生态录音 · 马山县</p></div><div style="font-size:9px;color:var(--wire);">4:32</div></div>
+      <div style="height:16px;"></div>
+    </div>
+
+    <!-- ===== P8: 传承人详情 ===== -->
+    <div class="page" id="page-inheritor-detail">
+      <div class="sub-header"><div class="back-btn" onclick="navBack()">‹</div><h2>👤 传承人</h2><div class="sh-right"><div class="sh-icon" onclick="showShareSheet()">📤</div></div></div>
+      <div style="text-align:center;padding:10px 0 16px;">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#fdf3e0,#f5e4c0);font-size:32px;">👩‍🦳</div>
+        <div class="profile-name">谭湘光</div>
+        <div class="profile-bio">国家级非遗代表性传承人 · 壮锦织造技艺</div>
+      </div>
+      <div class="detail-desc">谭湘光，广西靖西人，自幼随母亲学习壮锦织造技艺，从艺50余年。她精通壮锦传统72种纹样，创新开发了20余种现代壮锦产品。</div>
+      <div class="sec-title">基本信息</div>
+      <div class="info-row"><span class="ir-label">传承级别</span><span class="ir-val">国家级代表性传承人</span></div>
+      <div class="info-row"><span class="ir-label">传承项目</span><span class="ir-val" style="color:var(--accent);cursor:pointer;" onclick="goSub('heritage-detail')">壮锦织造技艺 ›</span></div>
+      <div class="info-row"><span class="ir-label">所在地区</span><span class="ir-val">百色市靖西市</span></div>
+      <div class="info-row" style="border-bottom:none;"><span class="ir-label">从艺年限</span><span class="ir-val">50余年</span></div>
+      <div class="sec-title" style="margin-top:14px;">代表作品</div>
+      <div class="gallery">
+        <div class="gallery-item" style="background:linear-gradient(135deg,#fdf3e0,#f5e4c0);" onclick="openImageViewer('🧵','壮锦·龙凤呈祥')">🧵</div>
+        <div class="gallery-item" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);" onclick="openImageViewer('🧶','壮锦·凤凰纹')">🧶</div>
+        <div class="gallery-item" style="background:linear-gradient(135deg,#fce8e6,#f5d0cc);" onclick="openImageViewer('🎨','壮锦·现代设计')">🎨</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <div class="btn btn-primary btn-full btn-sm" onclick="showToast('已发送问答请求','success')">在线问答</div>
+        <div class="btn btn-outline btn-full btn-sm" onclick="showBookingModal()">预约拜师</div>
+      </div>
+    </div>
+
+    <!-- ===== P9: 语言学堂 ===== -->
+    <div class="page" id="page-language">
+      <div class="sub-header"><div class="back-btn" onclick="goBack()">‹</div><h2>🎵 语言学堂</h2></div>
+      <div class="lang-hero"><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:700;margin-bottom:4px;">多彩民族语言，等你来学</h3><p style="font-size:10px;color:rgba(0,0,0,.5);">壮语 / 侗语 / 瑶语 · AI智能纠音</p></div>
+      <div class="comm-tabs" id="langTabs"><div class="comm-tab on" data-tab="courses">语言课程</div><div class="comm-tab" data-tab="songs">民歌教唱</div><div class="comm-tab" data-tab="games">趣味闯关</div></div>
+      <div id="langContent-courses">
+        <div class="sec-title">我的课程</div>
+        <div class="course-card" onclick="goSub('course-detail')"><div class="course-head"><div class="course-ico" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">壮</div><div><h5 style="font-size:12px;font-weight:700;">壮语 · 日常用语</h5><p style="font-size:10px;color:var(--wire);margin-top:1px;">分级教学 · 20课时</p></div></div><div class="progress-bar"><div class="progress-fill" style="width:60%;background:linear-gradient(90deg,var(--jade),#7ab892);"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;"><span style="font-size:9px;color:var(--wire);">已完成 12/20 课时</span><span style="font-size:9px;color:var(--jade);font-weight:700;">60%</span></div></div>
+        <div class="course-card" onclick="goSub('course-detail')"><div class="course-head"><div class="course-ico" style="background:linear-gradient(135deg,#e6ecf5,#ccd8ed);">侗</div><div><h5 style="font-size:12px;font-weight:700;">侗语 · 入门基础</h5><p style="font-size:10px;color:var(--wire);margin-top:1px;">分级教学 · 20课时</p></div></div><div class="progress-bar"><div class="progress-fill" style="width:30%;background:linear-gradient(90deg,var(--gold),#d4b86a);"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;"><span style="font-size:9px;color:var(--wire);">已完成 6/20 课时</span><span style="font-size:9px;color:var(--gold);font-weight:700;">30%</span></div></div>
+        <div class="course-card" onclick="goSub('course-detail')"><div class="course-head"><div class="course-ico" style="background:linear-gradient(135deg,#fce8e6,#f5d0cc);">瑶</div><div><h5 style="font-size:12px;font-weight:700;">瑶语 · 入门基础</h5><p style="font-size:10px;color:var(--wire);margin-top:1px;">分级教学 · 15课时</p></div></div><div class="progress-bar"><div class="progress-fill" style="width:0%;"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;"><span style="font-size:9px;color:var(--wire);">尚未开始</span><span style="font-size:9px;color:var(--wire);">0%</span></div></div>
+      </div>
+      <div id="langContent-songs" style="display:none;">
+        <div class="sec-title">热门民歌</div>
+        <div class="song-item" onclick="goSub('song-player')"><div class="song-play">▶</div><div style="flex:1;"><h5 style="font-size:11px;font-weight:700;">山歌好比春江水</h5><p style="font-size:9px;color:var(--wire);">壮族经典山歌 · 跟唱模式</p></div><div style="font-size:9px;color:var(--wire);">3:24</div></div>
+        <div class="song-item" onclick="goSub('song-player')"><div class="song-play">▶</div><div style="flex:1;"><h5 style="font-size:11px;font-weight:700;">侗族大歌 · 蝉之歌</h5><p style="font-size:9px;color:var(--wire);">多声部合唱 · 欣赏模式</p></div><div style="font-size:9px;color:var(--wire);">4:12</div></div>
+        <div class="song-item" onclick="goSub('song-player')"><div class="song-play">▶</div><div style="flex:1;"><h5 style="font-size:11px;font-weight:700;">瑶族长鼓舞曲</h5><p style="font-size:9px;color:var(--wire);">金秀瑶族 · 欣赏模式</p></div><div style="font-size:9px;color:var(--wire);">3:48</div></div>
+      </div>
+      <div id="langContent-games" style="display:none;">
+        <div class="sec-title">趣味闯关</div>
+        <div class="challenge-card" onclick="goSub('quiz-game')"><div style="font-size:28px;">👂</div><div style="flex:1;"><h5 style="font-size:12px;font-weight:700;">听音辨词挑战</h5><p style="font-size:10px;color:rgba(0,0,0,.5);margin-top:2px;">已通关 3/10 关 · 今日可获 50 积分</p></div></div>
+        <div class="challenge-card" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);" onclick="goSub('dialogue-sim')"><div style="font-size:28px;">💬</div><div style="flex:1;"><h5 style="font-size:12px;font-weight:700;">日常对话情景模拟</h5><p style="font-size:10px;color:rgba(0,0,0,.5);margin-top:2px;">集市买卖 / 节日问候 / 待客之道</p></div></div>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+
+    <!-- ===== P10: 课程详情 ===== -->
+    <div class="page" id="page-course-detail">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('language')">‹</div><h2>📖 壮语日常用语</h2></div>
+      <div class="lang-hero" style="text-align:left;"><h3 style="text-align:left;font-family:'Noto Serif SC',serif;font-size:15px;font-weight:700;">壮语 · 日常用语</h3><p style="text-align:left;font-size:10px;color:rgba(0,0,0,.5);">20课时 · 已完成12课 · 预计剩余4小时</p><div class="progress-bar" style="margin-top:10px;"><div class="progress-fill" style="width:60%;background:linear-gradient(90deg,var(--jade),#7ab892);"></div></div></div>
+      <div class="sec-title">课时列表</div>
+      <div class="lesson-card" onclick="goSub('lesson-page')"><div class="lesson-num done">1</div><div class="lesson-info"><h5>问候与自我介绍</h5><p>你好/谢谢/我叫… · 已完成</p></div></div>
+      <div class="lesson-card" onclick="goSub('lesson-page')"><div class="lesson-num done">2</div><div class="lesson-info"><h5>数字与量词</h5><p>一到一百/常用量词 · 已完成</p></div></div>
+      <div class="lesson-card" onclick="goSub('lesson-page')"><div class="lesson-num done">3</div><div class="lesson-info"><h5>家庭成员称呼</h5><p>父母/兄弟姐妹 · 已完成</p></div></div>
+      <div class="lesson-card" onclick="goSub('lesson-page')"><div class="lesson-num" style="background:var(--accent);color:#fff;">4</div><div class="lesson-info"><h5>日常饮食</h5><p>米饭/粉/茶/酒 · 进行中</p></div></div>
+      <div class="lesson-card"><div class="lesson-num locked">5</div><div class="lesson-info"><h5>时间与天气</h5><p>今天/明天/晴天 · 未解锁</p></div></div>
+      <div class="lesson-card" style="margin-bottom:16px;"><div class="lesson-num locked">6</div><div class="lesson-info"><h5>方位与出行</h5><p>上下左右 · 未解锁</p></div></div>
+    </div>
+
+    <!-- ===== P11: 课时学习 ===== -->
+    <div class="page" id="page-lesson-page">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('course-detail')">‹</div><h2>📖 第4课</h2></div>
+      <div style="text-align:center;padding:6px 0;margin-bottom:10px;"><div style="font-size:11px;color:var(--wire);margin-bottom:4px;">第4课 / 共20课</div><div class="detail-title">日常饮食</div></div>
+      <div class="sec-title">新词汇</div>
+      <div class="lesson-card" onclick="playWord(this)"><div class="lesson-num" style="background:var(--jade);color:#fff;font-size:9px;">壮</div><div class="lesson-info"><h5>haeux — 米饭</h5><p>Gou gwn haeux. (我吃饭。)</p></div><div style="font-size:16px;">🔊</div></div>
+      <div class="lesson-card" onclick="playWord(this)"><div class="lesson-num" style="background:var(--jade);color:#fff;font-size:9px;">壮</div><div class="lesson-info"><h5>caiz — 茶</h5><p>Gwn caiz ma. (喝杯茶吧。)</p></div><div style="font-size:16px;">🔊</div></div>
+      <div class="lesson-card" onclick="playWord(this)"><div class="lesson-num" style="background:var(--jade);color:#fff;font-size:9px;">壮</div><div class="lesson-info"><h5>laeuj — 酒</h5><p>Laeuj neix ndei gwn. (这酒好喝。)</p></div><div style="font-size:16px;">🔊</div></div>
+      <div class="sec-title" style="margin-top:14px;">语音跟读</div>
+      <div class="player-box">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Gou gwn haeux.</div>
+        <div style="font-size:10px;color:var(--wire);margin-bottom:10px;">我吃饭。</div>
+        <div class="waveform" id="lessonWave"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <div class="btn btn-outline btn-sm" onclick="playWord(null)">🔊 播放范读</div>
+          <div class="btn btn-primary btn-sm" id="recordBtn" onclick="startRecording()">🎙️ 开始跟读</div>
+        </div>
+      </div>
+      <div id="scoreArea" style="display:none;">
+        <div class="score-circle animate"><div class="sc-num" id="scoreNum">0</div></div>
+        <p style="text-align:center;font-size:10px;color:var(--jade);margin-bottom:6px;" id="scoreText">计算中…</p>
+      </div>
+      <div class="btn btn-jade btn-full" style="margin-bottom:16px;" onclick="goSub('course-detail');showToast('课程进度已保存','success')">完成本课 →</div>
+    </div>
+
+    <!-- ===== P12: 民歌播放 ===== -->
+    <div class="page" id="page-song-player">
+      <div class="sub-header"><div class="back-btn" onclick="navBack()">‹</div><h2>🎵 民歌播放</h2><div class="sh-right"><div class="sh-icon" onclick="toggleFav(this,'song')">🤍</div></div></div>
+      <div class="player-box" style="padding:24px 16px;">
+        <div class="player-disc" id="playerDisc">🎵</div>
+        <div style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:700;margin-bottom:4px;">山歌好比春江水</div>
+        <div style="font-size:10px;color:var(--wire);margin-bottom:12px;">壮族经典山歌 · 跟唱模式</div>
+        <div class="progress-bar" style="margin-bottom:8px;cursor:pointer;height:3px;" onclick="seekPlayer(event)"><div class="progress-fill" id="songProgress" style="width:0%;background:var(--accent);transition:none;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--wire);margin-bottom:12px;"><span id="songTime">0:00</span><span>3:24</span></div>
+        <div class="player-controls"><div class="p-ctrl" onclick="showToast('上一首')">⏮</div><div class="p-ctrl big" id="playBtn" onclick="togglePlay()">▶</div><div class="p-ctrl" onclick="showToast('下一首')">⏭</div></div>
+      </div>
+      <div class="sec-title">歌词 · 逐句跟唱</div>
+      <div class="lesson-card" style="border-color:var(--accent);border-style:solid;background:#fdf6f5;"><div style="font-size:12px;font-weight:700;line-height:1.6;">唱山歌哎～<br><span style="font-size:10px;color:var(--wire);font-weight:400;">Fwen ngeih a～</span></div><div style="font-size:14px;cursor:pointer;margin-left:auto;" onclick="showToast('🎙️ 录音中…','warn')">🎙️</div></div>
+      <div class="lesson-card"><div style="font-size:12px;font-weight:700;line-height:1.6;">这边唱来那边和～<br><span style="font-size:10px;color:var(--wire);font-weight:400;">Neix fwen lai nax ho～</span></div><div style="font-size:14px;cursor:pointer;margin-left:auto;" onclick="showToast('🎙️ 录音中…','warn')">🎙️</div></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;"><div class="btn btn-outline btn-full btn-sm">0.5x 慢速</div><div class="btn btn-primary btn-full btn-sm" onclick="showToast('AI纠音模式已开启','success')">AI纠音模式</div></div>
+    </div>
+
+    <!-- ===== P13: 闯关游戏 ===== -->
+    <div class="page" id="page-quiz-game">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('language')">‹</div><h2>👂 听音辨词</h2></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><span style="font-size:11px;color:var(--wire);">第 <span id="quizLevel">4</span> 关 / 共 10 关</span><span style="font-size:11px;font-weight:700;color:var(--gold);" id="quizScore">⭐ 150分</span></div>
+      <div class="progress-bar" style="margin-bottom:16px;"><div class="progress-fill" id="quizProgress" style="width:40%;background:var(--accent);"></div></div>
+      <div style="text-align:center;margin-bottom:16px;"><div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#e6ecf5,#ccd8ed);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;" onclick="showToast('🔊 播放音频中…')">🔊</div><div style="font-size:10px;color:var(--wire);">点击播放音频</div></div>
+      <div class="quiz-q">请选择你听到的词语：</div>
+      <div id="quizOptions">
+        <div class="quiz-option" onclick="selectQuizAnswer(this,false)"><div class="qo-letter">A</div>你好（mwngz ndei）</div>
+        <div class="quiz-option" onclick="selectQuizAnswer(this,true)"><div class="qo-letter">B</div>谢谢（gyaeuj ndaej）</div>
+        <div class="quiz-option" onclick="selectQuizAnswer(this,false)"><div class="qo-letter">C</div>再见（byaij ndei）</div>
+        <div class="quiz-option" onclick="selectQuizAnswer(this,false)"><div class="qo-letter">D</div>对不起（doiq mbouj gij）</div>
+      </div>
+      <div class="btn btn-primary btn-full" style="margin:14px 0 16px;" id="quizNextBtn" onclick="nextQuizQuestion()">下一题</div>
+    </div>
+
+    <!-- ===== P14: 对话模拟 ===== -->
+    <div class="page" id="page-dialogue-sim">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('language')">‹</div><h2>💬 对话模拟</h2></div>
+      <div class="chips"><div class="chip on">集市买卖</div><div class="chip">节日问候</div><div class="chip">待客之道</div></div>
+      <div style="background:var(--paper);border-radius:var(--radius);padding:14px;margin-bottom:14px;"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">🎭 场景：壮族集市</div><div style="font-size:10px;color:#555;line-height:1.6;">你来到一个热闹的壮族乡村集市，想要买一些新鲜的水果。尝试用壮语与摊主交流吧！</div></div>
+      <div id="dialogueChat" style="margin-bottom:14px;">
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:flex-end;"><div class="avatar">👩‍🌾</div><div style="background:var(--paper);padding:10px 12px;border-radius:0 12px 12px 12px;font-size:11px;max-width:75%;line-height:1.5;"><div style="font-weight:700;">Mwngz aeu maz?</div><div style="font-size:9px;color:var(--wire);margin-top:2px;">你要什么？</div></div></div>
+      </div>
+      <div style="font-size:11px;font-weight:600;margin-bottom:8px;">你的回答：</div>
+      <div class="quiz-option" onclick="selectDialogueAnswer(this,'Giuz lai! 太贵了！')"><div class="qo-letter">A</div>Giuz lai! (太贵了！)</div>
+      <div class="quiz-option" onclick="selectDialogueAnswer(this,'Ndei, gou aeu song gaen. 好，我买两斤。')"><div class="qo-letter">B</div>Ndei, gou aeu song gaen. (好，我买两斤。)</div>
+      <div class="quiz-option" onclick="selectDialogueAnswer(this,'Mbouj aeu lo. 不要了。')"><div class="qo-letter">C</div>Mbouj aeu lo. (不要了。)</div>
+      <div style="height:16px;"></div>
+    </div>
+
+    <!-- ===== P15: 沉浸体验 ===== -->
+    <div class="page" id="page-immersive">
+      <div class="sub-header"><div class="back-btn" onclick="goBack()">‹</div><h2>🎭 沉浸体验</h2></div>
+      <div class="imm-hero"><div class="imm-badge">✨ AR/VR</div><h3 style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.4);">穿越时空，身临其境</h3><p style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;">用科技感受千年民族文化</p></div>
+      <div class="sec-title">AR/VR 场景还原</div>
+      <div class="vr-card" onclick="goSub('vr-detail')"><div class="vr-preview" style="background:linear-gradient(135deg,#e8d5a0,#d4a86a);">🎪<div class="vr-360">360°</div></div><div style="padding:10px;"><h5 style="font-size:12px;font-weight:700;margin-bottom:2px;">三月三歌圩实景再现</h5><p style="font-size:10px;color:var(--wire);">沉浸式体验壮族最盛大的传统节日</p><div style="display:flex;gap:4px;margin-top:4px;"><span class="tag red">热门</span><span class="tag">VR体验</span></div></div></div>
+      <div class="vr-card" onclick="goSub('vr-detail')"><div class="vr-preview" style="background:linear-gradient(135deg,#c8a0d4,#a08ac8);">🏔️<div class="vr-360">360°</div></div><div style="padding:10px;"><h5 style="font-size:12px;font-weight:700;margin-bottom:2px;">瑶族达努节沉浸体验</h5><p style="font-size:10px;color:var(--wire);">亲历瑶族同胞的盛大庆典</p></div></div>
+      <div class="sec-title">互动小游戏</div>
+      <div class="game-grid">
+        <div class="game-card" onclick="goSub('game-detail')"><div class="g-ico">🎤</div><h5 style="font-size:11px;font-weight:700;margin-bottom:2px;">山歌学唱</h5><p style="font-size:9px;color:var(--wire);">AI评分 · 排行榜</p></div>
+        <div class="game-card" onclick="goSub('game-detail')"><div class="g-ico">🧵</div><h5 style="font-size:11px;font-weight:700;margin-bottom:2px;">壮锦织造</h5><p style="font-size:9px;color:var(--wire);">传统纹样体验</p></div>
+      </div>
+      <div class="sec-title">虚拟展馆</div>
+      <div class="exhibit-card" onclick="goSub('exhibit-detail')"><div class="exhibit-thumb" style="background:linear-gradient(135deg,#e8f5ee,#c8e6cf);">🏛️</div><div style="flex:1;display:flex;flex-direction:column;justify-content:center;"><h5 style="font-size:12px;font-weight:700;margin-bottom:3px;">360° 民族文物展览</h5><p style="font-size:10px;color:var(--wire);line-height:1.35;">42件珍贵文物高清展示</p><span class="tag">42件展品</span></div></div>
+      <div class="exhibit-card" onclick="goSub('exhibit-detail')" style="margin-bottom:16px;"><div class="exhibit-thumb" style="background:linear-gradient(135deg,#fdf3e0,#f0deb0);">🖼️</div><div style="flex:1;display:flex;flex-direction:column;justify-content:center;"><h5 style="font-size:12px;font-weight:700;margin-bottom:3px;">花山岩画数字复原</h5><p style="font-size:10px;color:var(--wire);line-height:1.35;">世界文化遗产 · 三维重建</p><span class="tag red">必看</span></div></div>
+    </div>
+
+    <!-- ===== P16: VR详情 ===== -->
+    <div class="page" id="page-vr-detail">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('immersive')">‹</div><h2>🎭 VR体验</h2><div class="sh-right"><div class="sh-icon" onclick="toggleFav(this,'vr')">🤍</div><div class="sh-icon" onclick="showShareSheet()">📤</div></div></div>
+      <div class="detail-hero" style="background:linear-gradient(135deg,#e8d5a0,#d4a86a);" onclick="openImageViewer('🎪','三月三歌圩')">🎪<div class="hero-badge">360° VR · 沉浸体验</div></div>
+      <div class="detail-title">三月三歌圩实景再现</div>
+      <div class="detail-meta"><span class="tag red">热门</span><span class="tag">VR体验</span><span class="tag">约15分钟</span></div>
+      <div class="detail-desc">农历三月初三是壮族最重要的传统节日。本VR体验将带你穿越到武鸣歌圩现场，360°全景感受万人对歌的壮观场面。</div>
+      <div class="sec-title">体验亮点</div>
+      <div class="lesson-card"><div class="lesson-num" style="background:var(--accent);color:#fff;">1</div><div class="lesson-info"><h5>万人歌圩对歌</h5><p>360°全景歌圩现场</p></div></div>
+      <div class="lesson-card"><div class="lesson-num" style="background:var(--gold);color:#fff;">2</div><div class="lesson-info"><h5>抛绣球互动</h5><p>亲手抛出虚拟绣球</p></div></div>
+      <div class="lesson-card"><div class="lesson-num" style="background:var(--jade);color:#fff;">3</div><div class="lesson-info"><h5>五色糯米饭制作</h5><p>AR互动体验传统美食</p></div></div>
+      <div class="btn btn-primary btn-full" style="margin:14px 0;" onclick="showVRLoading()">🥽 开始VR体验</div>
+      <div id="vrLoading" style="display:none;text-align:center;padding:20px 0;">
+        <div style="width:32px;height:32px;border:3px solid var(--wire-lt);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;"></div>
+        <div style="font-size:11px;color:var(--wire);">正在加载VR场景…</div>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+
+    <!-- ===== P17: 游戏详情 ===== -->
+    <div class="page" id="page-game-detail">
+      <div class="sub-header"><div class="back-btn" onclick="goSub('immersive')">‹</div><h2>🎮 游戏详情</h2></div>
+      <div class="detail-hero" style="background:linear-gradient(135deg,#fdf3e0,#e8c878);">🧵<div class="hero-badge">互动小游戏</div></div>
+      <div class="detail-title">壮锦织造体验</div>
+      <div class="detail-desc">从选择经线纬线到设计传统纹样，体验壮锦织造的完整过程。</div>
+      <div class="sec-title">游戏关卡</div>
+      <div class="lesson-card"><div class="lesson-num done">1</div><div class="lesson-info"><h5>认识织机</h5><p>了解壮锦织机 · 已完成</p></div></div>
+      <div class="lesson-card"><div class="lesson-num done">2</div><div class="lesson-info"><h5>选线配色</h5><p>传统配色方案 · 已完成</p></div></div>
+      <div class="lesson-card"><div class="lesson-num" style="background:var(--accent);color:#fff;">3</div><div class="lesson-info"><h5>棋盘纹织造</h5><p>基础纹样实操 · 进行中</p></div></div>
+      <div class="lesson-card"><div class="lesson-num locked">4</div><div class="lesson-info"><h5>凤凰纹进阶</h5><p>高级纹样挑战 · 未解锁</p></div></div>
+      <div style="display:flex;gap:8px;margin:14px 0 16px;"><div class="btn btn-primary btn-full" onclick="showToast('游戏加载中…');setTimeout(()=>showToast('请横屏使用获得最佳体验','warn'),1500)">继续游戏</div><div class="btn btn-outline btn-full" onclick="showRankModal()">排行榜</div></div>
+    </div>
+
+    <!-- ===== P18: 虚拟展馆 ===== -->
+    <div class="page" id="page-exhibit-detail">
+      <div class="sub-header"><div class="back-btn" onclick="navBack()">‹</div><h2>🏛️ 虚拟展馆</h2><div class="sh-right"><div class="sh-icon" onclick="toggleFav(this,'exhibit')">🤍</div></div></div>
+      <div class="detail-hero" style="background:linear-gradient(135deg,#e8f5ee,#c8e6cf);" onclick="openImageViewer('🏛️','民族文物展览')">🏛️<div class="hero-badge">360° 全景展览</div></div>
+      <div class="detail-title">360° 民族文物展览</div>
+      <div class="detail-meta"><span class="tag">42件展品</span><span class="tag">360°全景</span></div>
+      <div class="detail-desc">汇集广西各民族珍贵文物，包括铜鼓、壮锦、银饰等。每件展品均提供高清三维展示。</div>
+      <div class="sec-title">精选展品</div>
+      <div class="heritage-item" onclick="openImageViewer('🥁','翔鹭纹铜鼓')"><div class="h-thumb" style="background:linear-gradient(135deg,#fdf3e0,#f5e4c0);">🥁</div><div class="h-info"><h5>翔鹭纹铜鼓</h5><p>汉代 · 国家一级文物</p><div class="h-tags"><span class="tag red">镇馆之宝</span></div></div></div>
+      <div class="heritage-item" onclick="openImageViewer('🧶','凤凰纹壮锦')"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🧶</div><div class="h-info"><h5>凤凰纹壮锦</h5><p>清代 · 经典纹样代表</p></div></div>
+      <div class="heritage-item" onclick="openImageViewer('💎','苗族银角头饰')"><div class="h-thumb" style="background:linear-gradient(135deg,#e6ecf5,#ccd8ed);">💎</div><div class="h-info"><h5>苗族银角头饰</h5><p>近代 · 苗族银饰代表</p></div></div>
+      <div class="btn btn-jade btn-full" style="margin:6px 0 16px;" onclick="showToast('进入全景展厅…');setTimeout(()=>showToast('请左右滑动查看展品','success'),1500)">🥽 进入虚拟展厅</div>
+    </div>
+
+    <!-- ===== P19: 社区 ===== -->
+    <div class="page" id="page-community">
+      <div class="page-title">文化社区</div>
+      <div class="comm-tabs" id="commTabs"><div class="comm-tab on" data-tab="recommend">推荐</div><div class="comm-tab" data-tab="follow">关注</div><div class="comm-tab" data-tab="qa">问答</div><div class="comm-tab" data-tab="events">活动</div></div>
+      <div id="commContent-recommend">
+        <div class="live-card" onclick="goSub('live-room')"><div class="live-dot"></div><div class="live-info"><h5>🔴 直播中：侗族大歌传承人教学</h5><p>韦老师正在直播 · 328人观看</p></div></div>
+        <div class="qa-banner" onclick="goSub('daily-quiz')"><div class="qa-ico">🧠</div><div style="flex:1;"><h5 style="font-size:12px;font-weight:700;">每日文化答题</h5><p style="font-size:10px;color:var(--wire);margin-top:2px;">今日已有 1,204 人参与</p></div></div>
+        <div class="sec-title">动态</div>
+        <div class="post" onclick="goSub('post-detail')"><div class="post-head"><div class="avatar">👩</div><div><div class="name">山歌小韦</div></div><div class="time">2小时前</div></div><div class="post-body">今天在三江侗族自治县打卡了程阳风雨桥，太震撼了！桥上的廊亭雕刻精美绝伦，不用一颗铁钉。</div><div class="post-img" onclick="event.stopPropagation();openImageViewer('🌉','程阳风雨桥')">🌉</div><div class="post-actions"><span onclick="event.stopPropagation();toggleLike(this)">🤍 126</span><span>💬 23</span><span onclick="event.stopPropagation();toggleFav(this,'post')">🔖 收藏</span></div></div>
+        <div class="post" onclick="goSub('post-detail')"><div class="post-head"><div class="avatar v2">👨</div><div><div class="name">锦绣传人</div></div><div class="time">5小时前</div></div><div class="post-body">分享我学习壮锦织造的第30天记录，从最简单的棋盘纹开始，现在终于能织出凤凰纹了！</div><div class="post-img" onclick="event.stopPropagation();openImageViewer('🧶','壮锦作品')">🧶</div><div class="post-actions"><span onclick="event.stopPropagation();toggleLike(this)">🤍 89</span><span>💬 15</span><span onclick="event.stopPropagation();toggleFav(this,'post')">🔖 收藏</span></div></div>
+      </div>
+      <div id="commContent-follow" style="display:none;"><div style="text-align:center;padding:40px 0;color:var(--wire);"><div style="font-size:40px;margin-bottom:8px;opacity:.5;">👥</div><p style="font-size:11px;">关注你感兴趣的传承人和用户<br>查看他们的最新动态</p></div></div>
+      <div id="commContent-qa" style="display:none;"><div class="sec-title">热门问答</div>
+        <div class="post" style="cursor:pointer;"><div class="post-head"><div class="avatar v3">🧑‍🎓</div><div><div class="name">文化好奇者</div></div><div class="time">1小时前</div></div><div class="post-body" style="font-weight:600;">壮族铜鼓的纹饰有什么含义？不同纹饰代表什么？</div><div class="post-actions"><span>💬 8条回答</span><span>👍 42</span></div></div>
+        <div class="post" style="cursor:pointer;"><div class="post-head"><div class="avatar v4">👩‍🏫</div><div><div class="name">语言学习者</div></div><div class="time">3小时前</div></div><div class="post-body" style="font-weight:600;">壮语和泰语有关系吗？它们有哪些相似之处？</div><div class="post-actions"><span>💬 15条回答</span><span>👍 67</span></div></div>
+      </div>
+      <div id="commContent-events" style="display:none;"><div class="sec-title">近期活动</div>
+        <div class="item" onclick="goSub('event-detail')" style="margin-bottom:10px;"><div class="thumb" style="background:linear-gradient(135deg,#e6ecf5,#ccd8ed);">📅</div><div class="info"><h5>南宁市非遗研学之旅</h5><p>4月12日 · 广西民族博物馆</p><span class="tag">可报名</span></div></div>
+        <div class="item" onclick="goSub('event-detail')"><div class="thumb" style="background:linear-gradient(135deg,#fdf3e0,#f0deb0);">🎪</div><div class="info"><h5>百色田阳布洛陀文化节</h5><p>4月18-20日 · 田阳区</p><span class="tag">即将开始</span></div></div>
+        <div class="btn btn-outline btn-full btn-sm" style="margin-top:10px;" onclick="goSub('event-calendar')">📅 查看活动日历</div>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+    <!-- FAB -->
+    <div class="fab-menu" id="fabMenu">
+      <div class="fab-option" onclick="goSub('create-post');closeFab()"><span>📝 发动态</span><div class="fab-ico" style="background:var(--accent);color:#fff;">📝</div></div>
+      <div class="fab-option" onclick="goSub('checkin');closeFab()"><span>📍 打卡</span><div class="fab-ico" style="background:var(--jade);color:#fff;">📍</div></div>
+      <div class="fab-option" onclick="showToast('📷 扫一扫功能');closeFab()"><span>📷 扫一扫</span><div class="fab-ico" style="background:var(--gold);color:#fff;">📷</div></div>
+    </div>
+
+    <!-- ===== P20: 帖子详情 ===== -->
+    <div class="page" id="page-post-detail">
+      <div class="sub-header"><div class="back-btn" onclick="switchTab('community')">‹</div><h2>📄 动态详情</h2><div class="sh-right"><div class="sh-icon" onclick="showShareSheet()">📤</div></div></div>
+      <div style="margin-bottom:14px;"><div class="post-head"><div class="avatar">👩</div><div><div class="name">山歌小韦</div><div style="font-size:9px;color:var(--wire);">广西·三江 · 2小时前</div></div></div><div class="post-body" style="font-size:12px;line-height:1.7;margin-top:8px;">今天在三江侗族自治县打卡了程阳风雨桥，太震撼了！桥上的廊亭雕刻精美绝伦，不用一颗铁钉。<br><br>侗族的建筑技艺真的令人叹为观止，整座桥梁以杉木为原料，全部采用木榫卯结构。</div><div class="gallery" style="grid-template-columns:1fr 1fr;"><div class="gallery-item" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);aspect-ratio:1.2;" onclick="openImageViewer('🌉','程阳风雨桥')">🌉</div><div class="gallery-item" style="background:linear-gradient(135deg,#fdf3e0,#f5e4c0);aspect-ratio:1.2;" onclick="openImageViewer('🏘️','侗寨全景')">🏘️</div></div><div class="post-actions" style="padding-top:10px;border-top:1px solid var(--wire-lt);"><span onclick="toggleLike(this)">🤍 126</span><span>💬 23</span><span onclick="toggleFav(this,'post')">🔖 收藏</span></div></div>
+      <div class="sec-title">评论 (23)</div>
+      <div id="commentList">
+        <div class="chat-bubble"><div class="avatar v2" style="width:28px;height:28px;font-size:12px;">👨</div><div><div class="cb-name">锦绣传人 <span style="font-size:8px;color:var(--wire);font-weight:400;">· 1小时前</span></div><div class="cb-msg">太美了！我也想去三江看看。</div></div></div>
+        <div class="chat-bubble"><div class="avatar v3" style="width:28px;height:28px;font-size:12px;">👧</div><div><div class="cb-name">瑶妹阿花 <span style="font-size:8px;color:var(--wire);font-weight:400;">· 45分钟前</span></div><div class="cb-msg">照片拍得好棒！有推荐路线吗？</div></div></div>
+      </div>
+      <div class="chat-input-row"><input class="chat-input" id="commentInput" placeholder="写评论…" onkeydown="if(event.key==='Enter')sendComment()"><div class="chat-send" onclick="sendComment()">↑</div></div>
+    </div>
+
+    <!-- ===== P21: 发布动态 ===== -->
+    <div class="page" id="page-create-post">
+      <div class="sub-header"><div class="back-btn" onclick="switchTab('community')">‹</div><h2>✏️ 发布动态</h2></div>
+      <div class="form-group"><textarea class="form-input form-textarea" id="postContent" placeholder="分享你的文化之旅、学习心得…" style="min-height:120px;" oninput="updatePostBtn()"></textarea></div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;">添加图片/视频</div>
+      <div class="gallery" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;"><div class="gallery-item" style="background:var(--paper);font-size:20px;" onclick="showToast('已选择图片','success')">+</div></div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;">选择话题</div>
+      <div class="chips" style="flex-wrap:wrap;margin-bottom:14px;"><div class="chip"># 打卡记录</div><div class="chip"># 学习心得</div><div class="chip"># 非遗探访</div><div class="chip"># 美食分享</div></div>
+      <div class="btn btn-primary btn-full btn-disabled" id="publishBtn" style="margin-bottom:16px;" onclick="doPublish()">发布</div>
+    </div>
+
+    <!-- ===== P22: 直播间 ===== -->
+    <div class="page" id="page-live-room">
+      <div class="sub-header"><div class="back-btn" onclick="switchTab('community')">‹</div><h2>🔴 直播间</h2></div>
+      <div class="live-screen"><div class="ls-badge"><div class="live-dot" style="width:6px;height:6px;"></div> 直播中</div><div class="ls-count" id="liveCount">👁️ 328</div><div style="font-size:48px;">👩‍🏫</div></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><div class="avatar v4">👩‍🦳</div><div><div style="font-size:12px;font-weight:700;">韦老师 · 侗族大歌传承人</div><div style="font-size:9px;color:var(--wire);">国家级代表性传承人</div></div><div class="btn btn-primary btn-sm" id="followBtn" style="margin-left:auto;" onclick="doFollow(this)">关注</div></div>
+      <div class="sec-title">互动聊天</div>
+      <div id="liveChatList" style="max-height:150px;overflow-y:auto;">
+        <div class="chat-bubble"><div class="avatar" style="width:24px;height:24px;font-size:10px;">🧑</div><div><div class="cb-name">文化小白</div><div class="cb-msg">老师，侗族大歌为什么没有指挥？</div></div></div>
+        <div class="chat-bubble"><div class="avatar v2" style="width:24px;height:24px;font-size:10px;">👩</div><div><div class="cb-name">山歌小韦</div><div class="cb-msg">太好听了！</div></div></div>
+      </div>
+      <div class="chat-input-row"><input class="chat-input" id="liveChatInput" placeholder="说点什么…" onkeydown="if(event.key==='Enter')sendLiveChat()"><div class="chat-send" onclick="sendLiveChat()">↑</div></div>
+    </div>
+
+    <!-- ===== P23: 每日答题 ===== -->
+    <div class="page" id="page-daily-quiz">
+      <div class="sub-header"><div class="back-btn" onclick="switchTab('community')">‹</div><h2>🧠 每日答题</h2></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="font-size:11px;color:var(--wire);">第 3 题 / 共 5 题</span><span style="font-size:11px;font-weight:700;color:var(--jade);">✓ 2/2 正确</span></div>
+      <div class="progress-bar" style="margin-bottom:16px;"><div class="progress-fill" style="width:60%;background:var(--jade);"></div></div>
+      <div class="quiz-q">广西壮族自治区有多少个世居民族？</div>
+      <div class="quiz-option" onclick="selectQuizAnswer(this,false)"><div class="qo-letter">A</div>10个</div>
+      <div class="quiz-option" onclick="selectQuizAnswer(this,true)"><div class="qo-letter">B</div>12个</div>
+      <div class="quiz-option" onclick="selectQuizAnswer(this,false)"><div class="qo-letter">C</div>14个</div>
+      <div class="quiz-option" onclick="selectQuizAnswer(this,false)"><div class="qo-letter">D</div>16个</div>
+      <div style="background:var(--paper);border-radius:var(--radius);padding:12px;margin:10px 0 16px;"><div style="font-size:11px;font-weight:700;margin-bottom:4px;">📊 今日排行榜</div><div style="font-size:10px;color:#555;line-height:1.8;">🥇 壮乡文化达人 · 5/5 · 500分<br>🥈 非遗守护者 · 4/5 · 400分<br>🥉 山歌小韦 · 4/5 · 380分</div></div>
+    </div>
+
+    <!-- ===== P24: 活动详情 ===== -->
+    <div class="page" id="page-event-detail">
+      <div class="sub-header"><div class="back-btn" onclick="switchTab('community')">‹</div><h2>📅 活动详情</h2><div class="sh-right"><div class="sh-icon" onclick="showShareSheet()">📤</div></div></div>
+      <div class="detail-hero" style="background:linear-gradient(135deg,#e6ecf5,#ccd8ed);">📅<div class="hero-badge">研学活动 · 可报名</div></div>
+      <div class="detail-title">南宁市非遗研学之旅</div>
+      <div class="detail-meta"><span class="tag">可报名</span><span class="tag blue">研学</span></div>
+      <div class="sec-title">活动倒计时</div>
+      <div class="countdown"><div class="cd-unit"><div class="cd-num" id="cdDays">9</div><div class="cd-label">天</div></div><div class="cd-unit"><div class="cd-num" id="cdHours">14</div><div class="cd-label">时</div></div><div class="cd-unit"><div class="cd-num" id="cdMins">32</div><div class="cd-label">分</div></div><div class="cd-unit"><div class="cd-num" id="cdSecs">18</div><div class="cd-label">秒</div></div></div>
+      <div class="detail-desc">跟随非遗传承人走进广西民族博物馆，近距离观赏壮锦织造、铜鼓铸造等传统技艺展示。</div>
+      <div class="sec-title">活动信息</div>
+      <div class="info-row"><span class="ir-label">活动时间</span><span class="ir-val">2026年4月12日 9:00-17:00</span></div>
+      <div class="info-row"><span class="ir-label">活动地点</span><span class="ir-val">广西民族博物馆</span></div>
+      <div class="info-row"><span class="ir-label">参与名额</span><span class="ir-val" id="eventSlots">剩余 12/50 人</span></div>
+      <div class="info-row" style="border-bottom:none;"><span class="ir-label">报名费用</span><span class="ir-val">免费</span></div>
+      <div class="btn btn-primary btn-full" style="margin:14px 0 16px;" id="eventSignupBtn" onclick="doEventSignup()">立即报名</div>
+    </div>
+
+    <!-- ===== P25: 活动日历 ===== -->
+    <div class="page" id="page-event-calendar">
+      <div class="sub-header"><div class="back-btn" onclick="switchTab('community')">‹</div><h2>📅 活动日历</h2></div>
+      <div class="cal-header"><div class="cal-nav"><span onclick="showToast('3月')">‹</span></div><h4>2026年4月</h4><div class="cal-nav"><span onclick="showToast('5月')">›</span></div></div>
+      <div class="cal-grid"><div class="cal-day">日</div><div class="cal-day">一</div><div class="cal-day">二</div><div class="cal-day">三</div><div class="cal-day">四</div><div class="cal-day">五</div><div class="cal-day">六</div><div class="cal-date muted">29</div><div class="cal-date muted">30</div><div class="cal-date muted">31</div><div class="cal-date">1</div><div class="cal-date">2</div><div class="cal-date today">3</div><div class="cal-date">4</div><div class="cal-date">5</div><div class="cal-date">6</div><div class="cal-date">7</div><div class="cal-date">8</div><div class="cal-date">9</div><div class="cal-date">10</div><div class="cal-date">11</div><div class="cal-date has-event" onclick="goSub('event-detail')">12</div><div class="cal-date">13</div><div class="cal-date">14</div><div class="cal-date">15</div><div class="cal-date">16</div><div class="cal-date">17</div><div class="cal-date has-event" onclick="goSub('event-detail')">18</div><div class="cal-date has-event">19</div><div class="cal-date has-event">20</div><div class="cal-date">21</div><div class="cal-date has-event">22</div><div class="cal-date">23</div><div class="cal-date">24</div><div class="cal-date">25</div><div class="cal-date">26</div><div class="cal-date">27</div><div class="cal-date">28</div><div class="cal-date">29</div><div class="cal-date">30</div><div class="cal-date muted">1</div><div class="cal-date muted">2</div></div>
+      <div class="sec-title">4月12日 活动</div>
+      <div class="item" onclick="goSub('event-detail')" style="margin-bottom:16px;"><div class="thumb" style="background:linear-gradient(135deg,#e6ecf5,#ccd8ed);">📅</div><div class="info"><h5>南宁市非遗研学之旅</h5><p>9:00-17:00 · 广西民族博物馆</p><span class="tag">可报名</span></div></div>
+    </div>
+
+    <!-- ===== P26: 个人中心 ===== -->
+    <div class="page" id="page-profile">
+      <div class="profile-header"><div class="profile-avatar" onclick="goSub('edit-profile')">👤</div><div class="profile-name">文化探索者</div><div class="profile-bio">热爱广西民族文化 · 已打卡6座城市</div><div class="stats-row"><div class="stat" onclick="goSub('my-checkins')"><div class="num">23</div><div class="label">打卡</div></div><div class="stat" onclick="goSub('my-collection')"><div class="num">12</div><div class="label">收藏</div></div><div class="stat"><div class="num" id="totalPoints">860</div><div class="label">积分</div></div><div class="stat"><div class="num">5</div><div class="label">徽章</div></div></div></div>
+      <div class="sec-title">我的徽章</div>
+      <div class="badge-row" style="margin-bottom:14px;"><div class="badge" onclick="showBadgeInfo('🏔️','探索者','打卡3座城市解锁')">🏔️</div><div class="badge" onclick="showBadgeInfo('🎵','乐者','完成5节音乐课解锁')">🎵</div><div class="badge" onclick="showBadgeInfo('📜','学者','收藏10个非遗项目解锁')">📜</div><div class="badge" onclick="showBadgeInfo('🧵','匠人','完成壮锦游戏第2关解锁')">🧵</div><div class="badge" onclick="showBadgeInfo('🎭','文化达人','连续7天登录解锁')">🎭</div><div class="badge" style="background:var(--paper);" onclick="showToast('继续探索以解锁更多徽章')">?</div></div>
+      <div class="sec-title">常用功能</div>
+      <div class="menu-item mi-green" onclick="goSub('my-collection')"><div class="m-ico">⭐</div><div class="m-text">我的收藏</div><div class="m-arrow">›</div></div>
+      <div class="menu-item mi-red" onclick="goSub('my-posts')"><div class="m-ico">📝</div><div class="m-text">我的发布</div><div class="m-arrow">›</div></div>
+      <div class="menu-item mi-blue" onclick="goSub('my-learning')"><div class="m-ico">📖</div><div class="m-text">学习记录</div><div class="m-arrow">›</div></div>
+      <div class="menu-item mi-gold" onclick="goSub('my-checkins')"><div class="m-ico">📍</div><div class="m-text">我的打卡</div><div class="m-arrow">›</div></div>
+      <div class="sec-title" style="margin-top:14px;">学习进度</div>
+      <div style="background:#fff;border:1.5px dashed var(--wire-lt);border-radius:var(--radius);padding:12px;margin-bottom:16px;" onclick="goSub('my-learning')">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:12px;font-weight:700;">壮语日常用语</span><span style="font-size:10px;color:var(--jade);font-weight:700;">60%</span></div>
+        <div style="height:6px;background:var(--paper);border-radius:3px;overflow:hidden;"><div style="width:60%;height:100%;background:linear-gradient(90deg,var(--jade),#7ab892);border-radius:3px;"></div></div>
+      </div>
+    </div>
+
+    <!-- ===== P27: 编辑资料 ===== -->
+    <div class="page" id="page-edit-profile">
+      <div class="sub-header"><div class="back-btn" onclick="switchTab('profile')">‹</div><h2>✏️ 编辑资料</h2></div>
+      <div style="text-align:center;margin-bottom:16px;"><div class="profile-avatar" style="margin-bottom:8px;">👤</div><div style="font-size:10px;color:var(--accent);cursor:pointer;" onclick="showToast('选择照片…')">更换头像</div></div>
+      <div class="form-group"><div class="form-label">昵称</div><input class="form-input" value="文化探索者"></div>
+      <div class="form-group"><div class="form-label">个人简介</div><textarea class="form-input form-textarea" style="min-height:60px;">热爱广西民族文化</textarea></div>
+      <div class="form-group"><div class="form-label">兴趣标签</div><div class="chips" style="flex-wrap:wrap;"><div class="chip on">壮族文化</div><div class="chip on">传统音乐</div><div class="chip">传统舞蹈</div><div class="chip on">传统技艺</div><div class="chip">民俗</div></div></div>
+      <div class="btn btn-primary btn-full" style="margin-bottom:16px;" onclick="showToast('资料保存成功','success');setTimeout(()=>switchTab('profile'),800)">保存</div>
+    </div>
+
+    <!-- ===== P28: 我的收藏 ===== -->
+    <div class="page" id="page-my-collection">
+      <div class="sub-header"><div class="back-btn" onclick="switchTab('profile')">‹</div><h2>⭐ 我的收藏</h2></div>
+      <div class="comm-tabs"><div class="comm-tab on">非遗项目</div><div class="comm-tab">文化路线</div><div class="comm-tab">社区帖子</div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🎶</div><div class="h-info"><h5>壮族三声部民歌</h5><p>国家级非遗</p></div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#fce8e6,#f5d0cc);">🧶</div><div class="h-info"><h5>壮锦织造技艺</h5><p>国家级非遗</p></div></div>
+      <div class="heritage-item" onclick="goSub('heritage-detail')"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">🥁</div><div class="h-info"><h5>铜鼓习俗</h5><p>国家级非遗</p></div></div>
+      <div style="height:16px;"></div>
+    </div>
+
+    <!-- ===== P29: 我的发布 / P30: 学习记录 / P31: 我的打卡 ===== -->
+    <div class="page" id="page-my-posts"><div class="sub-header"><div class="back-btn" onclick="switchTab('profile')">‹</div><h2>📝 我的发布</h2></div><div class="post" onclick="goSub('post-detail')"><div class="post-head"><div class="avatar" style="background:linear-gradient(135deg,#a3c4ab,#e6d5a0);">👤</div><div><div class="name">文化探索者</div></div><div class="time">昨天</div></div><div class="post-body">第一次学会用壮语说"你好"！</div><div class="post-actions"><span>❤️ 34</span><span>💬 6</span></div></div><div style="height:16px;"></div></div>
+
+    <div class="page" id="page-my-learning"><div class="sub-header"><div class="back-btn" onclick="switchTab('profile')">‹</div><h2>📖 学习记录</h2></div><div class="sec-title">语言课程</div><div class="course-card" onclick="goSub('course-detail')"><div class="course-head"><div class="course-ico" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">壮</div><div><h5 style="font-size:12px;font-weight:700;">壮语 · 日常用语</h5><p style="font-size:10px;color:var(--wire);">已完成 12/20 课时</p></div></div><div class="progress-bar"><div class="progress-fill" style="width:60%;background:linear-gradient(90deg,var(--jade),#7ab892);"></div></div></div><div class="sec-title" style="margin-top:6px;">积分与徽章</div><div style="display:flex;gap:14px;align-items:center;margin-bottom:16px;"><div style="text-align:center;"><div style="font-size:24px;font-weight:900;color:var(--gold);">860</div><div style="font-size:9px;color:var(--wire);">总积分</div></div><div style="flex:1;display:flex;gap:6px;"><div class="badge">🏔️</div><div class="badge">🎵</div><div class="badge">📜</div><div class="badge">🧵</div><div class="badge">🎭</div></div></div></div>
+
+    <div class="page" id="page-my-checkins"><div class="sub-header"><div class="back-btn" onclick="switchTab('profile')">‹</div><h2>📍 我的打卡</h2></div><div class="checkin-map"><div class="ck-dot visited" style="top:50%;left:45%;"></div><div class="ck-dot visited" style="top:18%;left:42%;"></div><div class="ck-dot visited" style="top:15%;left:62%;"></div><div class="ck-dot visited" style="top:35%;left:30%;"></div><div class="ck-dot visited" style="top:25%;left:22%;"></div><div class="ck-dot visited" style="top:60%;left:55%;"></div><div class="ck-dot" style="top:40%;left:68%;"></div><div class="ck-dot" style="top:65%;left:40%;"></div><div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.5);color:#fff;font-size:8px;padding:2px 8px;border-radius:8px;">已打卡 6/14 城市</div></div><div class="sec-title">最近打卡</div><div class="item" style="margin-bottom:8px;"><div class="thumb" style="background:linear-gradient(135deg,#e8f5ee,#c8e6cf);">📍</div><div class="info"><h5>南宁 · 广西民族博物馆</h5><p>4月1日 · +50积分</p></div></div><div class="item" style="margin-bottom:16px;"><div class="thumb" style="background:linear-gradient(135deg,#fce8e6,#f0c8c4);">📍</div><div class="info"><h5>崇左 · 花山岩画景区</h5><p>3月28日 · +50积分</p></div></div></div>
+
+    <!-- ===== P32: 搜索 ===== -->
+    <div class="page" id="page-search">
+      <div class="sub-header"><div class="back-btn" onclick="goBack()">‹</div><h2>🔍 搜索</h2></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;"><input class="form-input" id="searchInput" placeholder="搜索非遗项目、传承人…" style="flex:1;border-radius:20px;padding:9px 14px;" oninput="doSearch()"><div class="btn btn-primary btn-sm" onclick="doSearch()">搜索</div></div>
+      <div id="searchResults" style="display:none;"></div>
+      <div id="searchDefault">
+        <div class="sec-title">热门搜索</div>
+        <div class="chips" style="flex-wrap:wrap;margin-bottom:14px;"><div class="chip" onclick="fillSearch('壮锦')">壮锦</div><div class="chip" onclick="fillSearch('铜鼓')">铜鼓</div><div class="chip" onclick="fillSearch('三月三')">三月三</div><div class="chip" onclick="fillSearch('侗族大歌')">侗族大歌</div><div class="chip" onclick="fillSearch('花山岩画')">花山岩画</div></div>
+      </div>
+    </div>
+
+    <!-- ===== P33: 视频播放 ===== -->
+    <div class="page" id="page-video-player">
+      <div class="sub-header"><div class="back-btn" onclick="navBack()">‹</div><h2>🎬 视频播放</h2><div class="sh-right"><div class="sh-icon" onclick="toggleFav(this,'video')">🤍</div><div class="sh-icon" onclick="showShareSheet()">📤</div></div></div>
+      <div class="live-screen" style="background:linear-gradient(135deg,#1a1a2e,#2a2a3a);"><div style="font-size:48px;">🎬</div><div class="ls-count" style="bottom:10px;right:10px;top:auto;">25:00</div><div style="position:absolute;bottom:10px;left:0;right:0;height:3px;background:rgba(255,255,255,.2);"><div style="width:35%;height:100%;background:var(--accent);"></div></div></div>
+      <div class="detail-title">纪录片：天籁之音</div>
+      <div class="detail-desc">本片深入广西马山县，记录壮族三声部民歌的传承故事。</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;"><div class="btn btn-outline btn-sm" style="flex:1;" onclick="toggleFav(this,'video')">❤️ 收藏</div><div class="btn btn-outline btn-sm" style="flex:1;" onclick="showShareSheet()">📤 分享</div></div>
+    </div>
+
+    <!-- ===== P34: 设置 ===== -->
+    <div class="page" id="page-settings">
+      <div class="page-title">设置</div>
+      <div class="setting-group"><div class="setting-group-title">账号与安全</div><div class="setting-item"><div class="s-ico">📱</div><div class="s-text">手机号绑定</div><div class="s-val">138****5678</div><div class="s-arrow">›</div></div><div class="setting-item"><div class="s-ico">🔑</div><div class="s-text">修改密码</div><div class="s-arrow">›</div></div><div class="setting-item" onclick="showToast('微信已绑定','success')"><div class="s-ico">🔗</div><div class="s-text">第三方账号</div><div class="s-val">微信已绑定</div><div class="s-arrow">›</div></div></div>
+      <div class="setting-group"><div class="setting-group-title">通知设置</div><div class="setting-item"><div class="s-ico">🔔</div><div class="s-text">系统消息推送</div><div class="toggle on" onclick="this.classList.toggle('on');showToast(this.classList.contains('on')?'已开启系统推送':'已关闭系统推送')"></div></div><div class="setting-item"><div class="s-ico">💬</div><div class="s-text">社区互动通知</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div><div class="setting-item"><div class="s-ico">📅</div><div class="s-text">活动提醒通知</div><div class="toggle" onclick="this.classList.toggle('on')"></div></div></div>
+      <div class="setting-group"><div class="setting-group-title">通用设置</div><div class="setting-item" onclick="goSub('lang-switch')"><div class="s-ico">🌐</div><div class="s-text">语言切换</div><div class="s-val">中文</div><div class="s-arrow">›</div></div><div class="setting-item"><div class="s-ico">🌙</div><div class="s-text">深色模式</div><div class="toggle" onclick="this.classList.toggle('on');showToast(this.classList.contains('on')?'深色模式已开启':'已切换浅色模式')"></div></div><div class="setting-item" onclick="showToast('已清除缓存','success')"><div class="s-ico">🗑️</div><div class="s-text">清除缓存</div><div class="s-val">23.5 MB</div><div class="s-arrow">›</div></div></div>
+      <div class="setting-group"><div class="setting-group-title">关于与帮助</div><div class="setting-item" onclick="goSub('about')"><div class="s-ico">ℹ️</div><div class="s-text">版本信息</div><div class="s-val">v1.0.0</div><div class="s-arrow">›</div></div><div class="setting-item" onclick="goSub('feedback')"><div class="s-ico">✉️</div><div class="s-text">意见反馈</div><div class="s-arrow">›</div></div></div>
+      <div class="setting-footer"><div style="color:var(--accent);font-size:11px;margin-bottom:8px;cursor:pointer;" onclick="showConfirmModal('确定要注销账号吗？','此操作不可撤销，所有数据将被清除。')">注销账号</div>壮美广西 v1.0.0<br>© 2026 壮美广西团队</div>
+    </div>
+
+    <!-- ===== P35-38: 子设置页 ===== -->
+    <div class="page" id="page-lang-switch"><div class="sub-header"><div class="back-btn" onclick="switchTab('settings')">‹</div><h2>🌐 语言切换</h2></div><div class="quiz-option selected" onclick="selectLang(this)"><div class="qo-letter">🇨🇳</div>中文（简体）</div><div class="quiz-option" onclick="selectLang(this)"><div class="qo-letter" style="font-size:10px;">壮</div>壮文（Sawcuengh）</div><div class="quiz-option" onclick="selectLang(this)"><div class="qo-letter">🇬🇧</div>English</div><div style="height:16px;"></div></div>
+
+    <div class="page" id="page-about"><div class="sub-header"><div class="back-btn" onclick="switchTab('settings')">‹</div><h2>ℹ️ 关于</h2></div><div style="text-align:center;padding:20px 0;"><div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#a3c4ab,#e6d5a0,#e8a89f);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:28px;">🎭</div><div style="font-family:'Noto Serif SC',serif;font-size:18px;font-weight:700;">壮美广西</div><div style="font-size:11px;color:var(--wire);margin-top:4px;">版本 1.0.0</div></div><div style="font-size:11px;color:#555;line-height:1.7;margin-bottom:14px;text-align:center;">致力于广西非物质文化遗产<br>数字化保护与传播</div><div class="info-row"><span class="ir-label">开发团队</span><span class="ir-val">壮美广西团队</span></div><div class="info-row" style="border-bottom:none;"><span class="ir-label">联系邮箱</span><span class="ir-val">contact@zhuangmeigx.com</span></div><div style="height:16px;"></div></div>
+
+    <div class="page" id="page-feedback"><div class="sub-header"><div class="back-btn" onclick="switchTab('settings')">‹</div><h2>✉️ 意见反馈</h2></div><div class="form-group"><div class="form-label">反馈类型</div><div class="chips" style="flex-wrap:wrap;"><div class="chip on">功能建议</div><div class="chip">Bug报告</div><div class="chip">内容纠错</div></div></div><div class="form-group"><div class="form-label">详细描述</div><textarea class="form-input form-textarea" id="feedbackText" placeholder="请描述你的建议或问题…" style="min-height:100px;"></textarea></div><div class="btn btn-primary btn-full" style="margin-bottom:16px;" onclick="submitFeedback()">提交反馈</div></div>
+
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tabs" id="tab-bar">
+    <div class="tab on" onclick="switchTab('home')"><span class="ti">🏠</span><span class="tl">首页</span></div>
+    <div class="tab" onclick="switchTab('community')" style="position:relative;"><span class="ti">👥</span><span class="tl">社区</span><div class="notif-dot" id="commNotif"></div></div>
+    <div class="tab" onclick="switchTab('profile')"><span class="ti">👤</span><span class="tl">我的</span></div>
+    <div class="tab" onclick="switchTab('settings')"><span class="ti">⚙️</span><span class="tl">设置</span></div>
+  </div>
+</div>
+
+<script>
+// ===== CORE NAV =====
+const mainPages=['home','community','profile','settings'];
+let currentMain='home';
+let navHistory=[];
+let fabOpen=false;
+let isPlaying=false;
+let playerInterval=null;
+let songTimeVal=0;
+let bannerIdx=0;
+let bannerTimer;
+
+function switchTab(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.tab')[mainPages.indexOf(name)].classList.add('on');
+  document.getElementById('scrollArea').scrollTop=0;
+  currentMain=name;
+  navHistory=[];
+  closeFab();
+  // Show FAB only on community
+  document.getElementById('fabMenu').style.display='none';
+}
+function goSub(name){
+  let active=document.querySelector('.page.active');
+  if(active) navHistory.push(active.id.replace('page-',''));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  let pg=document.getElementById('page-'+name);
+  if(pg){pg.classList.add('active');pg.classList.add('slide-left');setTimeout(()=>pg.classList.remove('slide-left'),350);}
+  document.getElementById('scrollArea').scrollTop=0;
+  closeFab();
+}
+function goBack(){switchTab(currentMain);}
+function navBack(){if(navHistory.length>0){let p=navHistory.pop();document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');document.getElementById('scrollArea').scrollTop=0;}else goBack();}
+
+// ===== TOAST =====
+function showToast(msg,type=''){
+  let c=document.getElementById('toastContainer');
+  let t=document.createElement('div');
+  t.className='toast '+(type||'');
+  t.textContent=msg;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.animation='toastOut .3s ease forwards';setTimeout(()=>t.remove(),300);},2000);
+}
+
+// ===== IMAGE VIEWER =====
+function openImageViewer(emoji,caption){
+  let v=document.getElementById('imgViewer');
+  document.getElementById('ivContent').textContent=emoji;
+  document.getElementById('ivCaption').textContent=caption||'';
+  v.classList.add('show');
+}
+function closeImageViewer(){document.getElementById('imgViewer').classList.remove('show');}
+
+// ===== MODAL =====
+function showModal(html){document.getElementById('modalContent').innerHTML=html;document.getElementById('modalOverlay').classList.add('show');}
+function closeModal(e){if(e&&e.target===document.getElementById('modalOverlay'))document.getElementById('modalOverlay').classList.remove('show');}
+function forceCloseModal(){document.getElementById('modalOverlay').classList.remove('show');}
+
+// ===== SHARE SHEET =====
+function showShareSheet(){
+  showModal('<div class="modal-title">分享到</div><div style="display:flex;justify-content:space-around;margin-bottom:16px;"><div style="text-align:center;cursor:pointer;" onclick="showToast(\'已分享到微信\',\'success\');forceCloseModal()"><div style="width:44px;height:44px;border-radius:50%;background:#07C160;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 4px;">💬</div><div style="font-size:10px;">微信</div></div><div style="text-align:center;cursor:pointer;" onclick="showToast(\'已分享到朋友圈\',\'success\');forceCloseModal()"><div style="width:44px;height:44px;border-radius:50%;background:#07C160;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 4px;">🌐</div><div style="font-size:10px;">朋友圈</div></div><div style="text-align:center;cursor:pointer;" onclick="showToast(\'已分享到QQ\',\'success\');forceCloseModal()"><div style="width:44px;height:44px;border-radius:50%;background:#12B7F5;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 4px;">🐧</div><div style="font-size:10px;">QQ</div></div><div style="text-align:center;cursor:pointer;" onclick="showToast(\'链接已复制\',\'success\');forceCloseModal()"><div style="width:44px;height:44px;border-radius:50%;background:var(--wire-lt);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 4px;">🔗</div><div style="font-size:10px;">复制链接</div></div></div><div class="btn btn-outline btn-full" onclick="forceCloseModal()">取消</div>');
+}
+
+// ===== CONFIRM MODAL =====
+function showConfirmModal(title,desc){
+  showModal('<div class="modal-title">'+title+'</div><p style="font-size:11px;color:#555;text-align:center;line-height:1.6;margin-bottom:16px;">'+desc+'</p><div style="display:flex;gap:8px;"><div class="btn btn-outline btn-full" onclick="forceCloseModal()">取消</div><div class="btn btn-primary btn-full" onclick="forceCloseModal();showToast(\'操作已取消\')">确认</div></div>');
+}
+
+// ===== BOOKING MODAL =====
+function showBookingModal(){
+  showModal('<div class="modal-title">预约拜师学艺</div><div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;margin-bottom:6px;">选择日期</div><div style="display:flex;gap:6px;flex-wrap:wrap;"><div class="chip on" style="font-size:10px;">4月10日</div><div class="chip" style="font-size:10px;">4月15日</div><div class="chip" style="font-size:10px;">4月20日</div></div></div><div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;margin-bottom:6px;">学习内容</div><div style="display:flex;gap:6px;flex-wrap:wrap;"><div class="chip on" style="font-size:10px;">基础织造</div><div class="chip" style="font-size:10px;">纹样设计</div><div class="chip" style="font-size:10px;">配色技法</div></div></div><div class="btn btn-primary btn-full" onclick="forceCloseModal();showToast(\'预约成功！等待传承人确认\',\'success\');launchConfetti()">确认预约</div>');
+}
+
+// ===== RANK MODAL =====
+function showRankModal(){
+  showModal('<div class="modal-title">🏆 排行榜</div><div style="font-size:11px;line-height:2.4;"><div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--wire-lt);"><span>🥇</span><span style="flex:1;font-weight:700;">壮锦达人</span><span style="color:var(--gold);font-weight:700;">9,850分</span></div><div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--wire-lt);"><span>🥈</span><span style="flex:1;font-weight:700;">织锦小王</span><span style="color:var(--wire);">8,200分</span></div><div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--wire-lt);"><span>🥉</span><span style="flex:1;font-weight:700;">文化探索者</span><span style="color:var(--wire);">5,600分</span></div><div style="display:flex;align-items:center;gap:8px;padding:4px 0;"><span style="font-size:10px;color:var(--wire);">4</span><span style="flex:1;">传统手艺人</span><span style="color:var(--wire);">4,100分</span></div></div><div class="btn btn-outline btn-full" style="margin-top:12px;" onclick="forceCloseModal()">关闭</div>');
+}
+
+// ===== CITY CARD MODAL =====
+function showCityCard(name,count,emoji){
+  showModal('<div style="text-align:center;margin-bottom:12px;"><div style="font-size:40px;margin-bottom:6px;">'+emoji+'</div><div class="modal-title">'+name+'</div><div style="font-size:11px;color:var(--wire);">'+count+'</div></div><div class="btn btn-primary btn-full" onclick="forceCloseModal();goSub(\'heritage\')">查看文化遗产</div><div class="btn btn-outline btn-full" style="margin-top:6px;" onclick="forceCloseModal()">关闭</div>');
+}
+
+// ===== BADGE INFO =====
+function showBadgeInfo(emoji,name,desc){
+  showModal('<div style="text-align:center;"><div style="font-size:48px;margin-bottom:8px;">'+emoji+'</div><div class="modal-title">'+name+'</div><div style="font-size:11px;color:var(--wire);margin-bottom:16px;">'+desc+'</div><div class="btn btn-outline btn-full" onclick="forceCloseModal()">关闭</div></div>');
+}
+
+// ===== CONFETTI =====
+function launchConfetti(){
+  let c=document.getElementById('confettiContainer');
+  c.innerHTML='';
+  const colors=['#c4594a','#5a8a6e','#c9a84c','#5a7ab8','#e8a89f','#a3c4ab'];
+  for(let i=0;i<40;i++){
+    let p=document.createElement('div');
+    p.className='confetti';
+    p.style.left=Math.random()*100+'%';
+    p.style.top='-10px';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDelay=Math.random()*0.5+'s';
+    p.style.animationDuration=(1.5+Math.random())+'s';
+    c.appendChild(p);
+  }
+  setTimeout(()=>c.innerHTML='',3000);
+}
+
+// ===== TOGGLE FAV =====
+function toggleFav(el,type){
+  if(el.textContent==='🤍'){el.textContent='❤️';showToast('已收藏','success');el.style.animation='popCorrect .3s ease';}
+  else{el.textContent='🤍';showToast('已取消收藏');}
+}
+
+// ===== TOGGLE LIKE =====
+function toggleLike(el){
+  if(el.classList.contains('liked')){el.classList.remove('liked');let n=parseInt(el.textContent.match(/\d+/));el.innerHTML='🤍 '+(n-1);}
+  else{el.classList.add('liked');let n=parseInt(el.textContent.match(/\d+/));el.innerHTML='❤️ '+(n+1);
+    // Float heart
+    let h=document.createElement('span');h.textContent='❤️';h.className='hb';h.style.cssText='position:absolute;font-size:14px;opacity:0;pointer-events:none;animation:heartFloat 1s ease-out forwards;left:'+el.offsetLeft+'px;top:'+el.offsetTop+'px;';
+    el.closest('.post,.page').appendChild(h);setTimeout(()=>h.remove(),1000);
+  }
+}
+
+// ===== BANNER CAROUSEL =====
+function slideBanner(idx){
+  bannerIdx=idx;
+  document.getElementById('bannerTrack').style.transform='translateX(-'+idx*100+'%)';
+  document.querySelectorAll('#bannerDots i').forEach((d,i)=>d.classList.toggle('on',i===idx));
+}
+function autoBanner(){bannerTimer=setInterval(()=>{bannerIdx=(bannerIdx+1)%3;slideBanner(bannerIdx);},4000);}
+autoBanner();
+
+// ===== CONTENT FILTER =====
+document.getElementById('homeChips').addEventListener('click',e=>{
+  if(!e.target.classList.contains('chip'))return;
+  document.querySelectorAll('#homeChips .chip').forEach(c=>c.classList.remove('on'));
+  e.target.classList.add('on');
+  let cat=e.target.dataset.cat;
+  document.querySelectorAll('#hotContent .item').forEach(item=>{
+    item.style.display=item.dataset.cat.includes(cat)?'flex':'none';
+  });
+});
+
+// ===== FILTER BTNS =====
+document.querySelectorAll('.filter-row').forEach(row=>{
+  row.addEventListener('click',e=>{
+    if(e.target.classList.contains('filter-btn')){
+      row.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+      e.target.classList.add('on');
+      showToast('已切换筛选方式');
+    }
+  });
+});
+
+// ===== TABS SYSTEM =====
+function setupTabs(tabsId,prefix){
+  document.getElementById(tabsId).addEventListener('click',e=>{
+    let tab=e.target.closest('.comm-tab');
+    if(!tab)return;
+    document.querySelectorAll('#'+tabsId+' .comm-tab').forEach(t=>t.classList.remove('on'));
+    tab.classList.add('on');
+    let key=tab.dataset.tab;
+    document.querySelectorAll('[id^="'+prefix+'"]').forEach(el=>{el.style.display='none';});
+    let target=document.getElementById(prefix+key);
+    if(target)target.style.display='block';
+  });
+}
+setupTabs('commTabs','commContent-');
+setupTabs('langTabs','langContent-');
+
+// ===== CHIPS TOGGLE =====
+document.querySelectorAll('.chips').forEach(chips=>{
+  chips.addEventListener('click',e=>{
+    if(e.target.classList.contains('chip')&&!e.target.onclick){
+      chips.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+      e.target.classList.add('on');
+    }
+  });
+});
+
+// ===== MUSIC PLAYER =====
+function togglePlay(){
+  let btn=document.getElementById('playBtn');
+  let disc=document.getElementById('playerDisc');
+  if(isPlaying){btn.textContent='▶';disc.classList.remove('spinning');clearInterval(playerInterval);isPlaying=false;}
+  else{btn.textContent='⏸';disc.classList.add('spinning');isPlaying=true;
+    playerInterval=setInterval(()=>{songTimeVal+=1;if(songTimeVal>204)songTimeVal=0;
+      let pct=(songTimeVal/204)*100;
+      document.getElementById('songProgress').style.width=pct+'%';
+      let m=Math.floor(songTimeVal/60),s=songTimeVal%60;
+      document.getElementById('songTime').textContent=m+':'+(s<10?'0':'')+s;
+    },1000);
+  }
+}
+function seekPlayer(e){let r=e.currentTarget.getBoundingClientRect();let pct=(e.clientX-r.left)/r.width;songTimeVal=Math.floor(pct*204);document.getElementById('songProgress').style.width=(pct*100)+'%';}
+
+// ===== QUIZ ANSWERS =====
+function selectQuizAnswer(el,correct){
+  let parent=el.parentElement;
+  if(parent.dataset.answered)return;
+  parent.dataset.answered='1';
+  parent.querySelectorAll('.quiz-option').forEach(o=>{o.style.pointerEvents='none';});
+  if(correct){el.classList.add('correct');showToast('✓ 回答正确！+50积分','success');launchConfetti();}
+  else{el.classList.add('wrong');showToast('✗ 回答错误','error');
+    // Highlight correct
+    parent.querySelectorAll('.quiz-option').forEach(o=>{if(o!==el&&o.onclick&&o.onclick.toString().includes('true'))o.classList.add('correct');});
+  }
+}
+function nextQuizQuestion(){showToast('加载下一题…');setTimeout(()=>{document.querySelectorAll('#quizOptions .quiz-option').forEach(o=>{o.classList.remove('correct','wrong','selected');o.style.pointerEvents='auto';});document.getElementById('quizOptions').parentElement.dataset.answered='';let lv=parseInt(document.getElementById('quizLevel').textContent)+1;document.getElementById('quizLevel').textContent=lv;document.getElementById('quizProgress').style.width=(lv*10)+'%';},500);}
+
+// ===== RECORDING SIM =====
+function playWord(el){showToast('🔊 播放中…');if(el)el.style.animation='popCorrect .3s ease';setTimeout(()=>{if(el)el.style.animation='';},400);}
+function startRecording(){
+  let btn=document.getElementById('recordBtn');
+  let wave=document.getElementById('lessonWave');
+  btn.textContent='🎙️ 录音中…';btn.classList.add('btn-loading');
+  wave.classList.add('animating');
+  setTimeout(()=>{
+    btn.textContent='🎙️ 开始跟读';btn.classList.remove('btn-loading');
+    wave.classList.remove('animating');
+    document.getElementById('scoreArea').style.display='block';
+    let score=Math.floor(Math.random()*15)+82;
+    document.getElementById('scoreNum').textContent=score;
+    document.getElementById('scoreText').textContent='发音评分：'+(score>=90?'优秀':'良好')+'！声调准确度 '+(score+2)+'%';
+    document.querySelector('.score-circle').classList.add('animate');
+    if(score>=85)launchConfetti();
+  },2500);
+}
+
+// ===== CHECKIN =====
+function doCheckin(){
+  let btn=document.getElementById('checkinBtn');
+  btn.innerHTML='<span style="animation:spin .6s linear infinite;display:inline-block;">⏳</span> 定位中…';
+  setTimeout(()=>{btn.textContent='✓ 打卡成功！';btn.classList.remove('btn-primary');btn.classList.add('btn-jade');showToast('🎉 打卡成功！+50积分','success');launchConfetti();},1500);
+}
+function doPublishCheckin(){showToast('动态发布成功！','success');setTimeout(()=>switchTab('community'),1000);}
+
+// ===== COMMENT =====
+function sendComment(){
+  let input=document.getElementById('commentInput');
+  if(!input.value.trim())return;
+  let list=document.getElementById('commentList');
+  let html='<div class="chat-bubble"><div class="avatar" style="width:28px;height:28px;font-size:12px;background:linear-gradient(135deg,#a3c4ab,#e6d5a0);">👤</div><div><div class="cb-name">文化探索者 <span style="font-size:8px;color:var(--wire);font-weight:400;">· 刚刚</span></div><div class="cb-msg">'+input.value+'</div></div></div>';
+  list.insertAdjacentHTML('beforeend',html);
+  input.value='';
+  showToast('评论成功','success');
+}
+
+// ===== LIVE CHAT =====
+function sendLiveChat(){
+  let input=document.getElementById('liveChatInput');
+  if(!input.value.trim())return;
+  let list=document.getElementById('liveChatList');
+  let html='<div class="chat-bubble"><div class="avatar" style="width:24px;height:24px;font-size:10px;background:linear-gradient(135deg,#a3c4ab,#e6d5a0);">👤</div><div><div class="cb-name">文化探索者</div><div class="cb-msg">'+input.value+'</div></div></div>';
+  list.insertAdjacentHTML('beforeend',html);
+  input.value='';
+  list.scrollTop=list.scrollHeight;
+  // Auto reply
+  setTimeout(()=>{
+    let replies=['谢谢关注！','欢迎大家多提问！','下次有线下课可以来报名哦'];
+    let r=replies[Math.floor(Math.random()*replies.length)];
+    list.insertAdjacentHTML('beforeend','<div class="chat-bubble"><div class="avatar v4" style="width:24px;height:24px;font-size:10px;">👩‍🦳</div><div><div class="cb-name" style="color:var(--gold);">韦老师</div><div class="cb-msg">'+r+'</div></div></div>');
+    list.scrollTop=list.scrollHeight;
+    // Update viewer count
+    let c=document.getElementById('liveCount');
+    c.textContent='👁️ '+(329+Math.floor(Math.random()*10));
+  },1500);
+}
+
+// ===== DIALOGUE =====
+function selectDialogueAnswer(el,text){
+  let parent=el.parentElement;
+  parent.querySelectorAll('.quiz-option').forEach(o=>{o.style.pointerEvents='none';o.classList.remove('selected');});
+  el.classList.add('selected');
+  let chat=document.getElementById('dialogueChat');
+  chat.insertAdjacentHTML('beforeend','<div style="display:flex;gap:8px;margin-bottom:10px;align-items:flex-end;flex-direction:row-reverse;"><div class="avatar v2" style="font-size:12px;">🧑</div><div style="background:var(--accent);color:#fff;padding:10px 12px;border-radius:12px 0 12px 12px;font-size:11px;max-width:75%;line-height:1.5;">'+text+'</div></div>');
+  showToast('回答正确！+30积分','success');
+  setTimeout(()=>{
+    chat.insertAdjacentHTML('beforeend','<div style="display:flex;gap:8px;margin-bottom:10px;align-items:flex-end;"><div class="avatar">👩‍🌾</div><div style="background:var(--paper);padding:10px 12px;border-radius:0 12px 12px 12px;font-size:11px;max-width:75%;line-height:1.5;"><div style="font-weight:700;">Ndei! Mwngz gangjlij caemh ndei!</div><div style="font-size:9px;color:var(--wire);margin-top:2px;">好！你的壮语说得不错！</div></div></div>');
+  },1200);
+}
+
+// ===== PUBLISH POST =====
+function updatePostBtn(){let v=document.getElementById('postContent').value;let btn=document.getElementById('publishBtn');if(v.trim().length>0)btn.classList.remove('btn-disabled');else btn.classList.add('btn-disabled');}
+function doPublish(){showToast('发布成功！','success');launchConfetti();setTimeout(()=>switchTab('community'),1000);}
+
+// ===== SEARCH =====
+const searchData=[
+  {name:'壮族三声部民歌',tag:'国家级',ico:'🎶'},
+  {name:'壮锦织造技艺',tag:'国家级',ico:'🧶'},
+  {name:'铜鼓习俗',tag:'国家级',ico:'🥁'},
+  {name:'侗族大歌',tag:'世界级',ico:'🎵'},
+  {name:'花山岩画',tag:'世界遗产',ico:'🏔️'},
+  {name:'壮族天琴艺术',tag:'国家级',ico:'🎸'},
+  {name:'刘三姐歌谣',tag:'国家级',ico:'🎤'},
+  {name:'谭湘光',tag:'传承人',ico:'👩‍🦳'},
+  {name:'三月三歌圩',tag:'民俗',ico:'🎪'},
+  {name:'瑶族长鼓舞',tag:'传统舞蹈',ico:'💃'},
+];
+function fillSearch(kw){document.getElementById('searchInput').value=kw;doSearch();}
+function doSearch(){
+  let q=document.getElementById('searchInput').value.trim().toLowerCase();
+  let rd=document.getElementById('searchDefault'),rr=document.getElementById('searchResults');
+  if(!q){rd.style.display='block';rr.style.display='none';return;}
+  rd.style.display='none';rr.style.display='block';
+  let results=searchData.filter(d=>d.name.toLowerCase().includes(q));
+  if(results.length===0){rr.innerHTML='<div style="text-align:center;padding:30px 0;color:var(--wire);font-size:11px;">未找到相关结果</div>';return;}
+  rr.innerHTML='<div class="sec-title">搜索结果</div>'+results.map(r=>'<div class="heritage-item" onclick="goSub(\'heritage-detail\')"><div class="h-thumb" style="background:linear-gradient(135deg,#e8f5ee,#d0e8d7);">'+r.ico+'</div><div class="h-info"><h5>'+r.name+'</h5><div class="h-tags"><span class="tag">'+r.tag+'</span></div></div></div>').join('');
+}
+
+// ===== EVENT SIGNUP =====
+function doEventSignup(){
+  let btn=document.getElementById('eventSignupBtn');
+  btn.innerHTML='报名中…';btn.classList.add('btn-loading');
+  setTimeout(()=>{btn.innerHTML='✓ 已报名';btn.classList.remove('btn-loading','btn-primary');btn.classList.add('btn-jade');btn.style.pointerEvents='none';
+    document.getElementById('eventSlots').textContent='剩余 11/50 人';
+    showToast('🎉 报名成功！','success');launchConfetti();
+  },1500);
+}
+
+// ===== FOLLOW =====
+function doFollow(el){
+  if(el.textContent==='关注'){el.textContent='已关注';el.classList.remove('btn-primary');el.classList.add('btn-outline');showToast('关注成功','success');}
+  else{el.textContent='关注';el.classList.remove('btn-outline');el.classList.add('btn-primary');showToast('已取消关注');}
+}
+
+// ===== LANG SELECT =====
+function selectLang(el){
+  el.parentElement.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  showToast('语言已切换','success');
+}
+
+// ===== VR LOADING =====
+function showVRLoading(){
+  document.getElementById('vrLoading').style.display='block';
+  setTimeout(()=>{document.getElementById('vrLoading').style.display='none';showToast('VR场景加载完成！请佩戴VR设备','success');},2500);
+}
+
+// ===== FEEDBACK =====
+function submitFeedback(){
+  let t=document.getElementById('feedbackText');
+  if(!t.value.trim()){showToast('请填写反馈内容','warn');return;}
+  showToast('反馈提交成功，感谢您的建议！','success');
+  t.value='';
+  setTimeout(()=>switchTab('settings'),1000);
+}
+
+// ===== FAB =====
+document.querySelector('.scroll-area').addEventListener('scroll',()=>{
+  // Show FAB when community page is active
+});
+// Community FAB
+let communityFab;
+setInterval(()=>{
+  let cp=document.getElementById('page-community');
+  let fm=document.getElementById('fabMenu');
+  if(!communityFab){
+    communityFab=document.createElement('div');
+    communityFab.className='fab';
+    communityFab.textContent='+';
+    communityFab.onclick=()=>{fabOpen=!fabOpen;fm.classList.toggle('show',fabOpen);communityFab.style.transform=fabOpen?'rotate(45deg)':'';};
+    document.getElementById('phone').appendChild(communityFab);
+  }
+  communityFab.style.display=cp.classList.contains('active')?'flex':'none';
+  if(!cp.classList.contains('active'))fm.classList.remove('show');
+},200);
+function closeFab(){fabOpen=false;let fm=document.getElementById('fabMenu');fm.classList.remove('show');if(communityFab)communityFab.style.transform='';}
+
+// ===== COUNTDOWN =====
+let cdVal=9*24*3600+14*3600+32*60+18;
+setInterval(()=>{cdVal--;if(cdVal<0)cdVal=0;
+  let d=Math.floor(cdVal/86400),h=Math.floor((cdVal%86400)/3600),m=Math.floor((cdVal%3600)/60),s=cdVal%60;
+  let de=document.getElementById('cdDays'),he=document.getElementById('cdHours'),me=document.getElementById('cdMins'),se=document.getElementById('cdSecs');
+  if(de)de.textContent=d;if(he)he.textContent=h;if(me)me.textContent=m;if(se)se.textContent=s<10?'0'+s:s;
+},1000);
+
+// ===== CLOCK =====
+setInterval(()=>{let d=new Date();document.getElementById('clock').textContent=d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes();},1000);
+
+// ===== REMOVE NOTIF DOT AFTER TAP =====
+document.querySelectorAll('.tab')[1].addEventListener('click',()=>{let n=document.getElementById('commNotif');if(n)n.style.display='none';});
+
+// ===== INIT: Show splash =====
+document.getElementById('page-splash').classList.add('active');
+</script>
+</body>
+</html>
